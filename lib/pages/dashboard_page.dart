@@ -23,7 +23,7 @@ class DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _loadTools(); // Loads tools when the widget is initilized
+    _loadTools(); // Loads tools when the widget is initialized
   }
 
   // --- SharePreferences Logic ---
