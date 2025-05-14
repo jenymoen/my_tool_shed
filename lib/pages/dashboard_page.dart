@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:my_tool_shed/models/tool.dart';
+import 'package:my_tool_shed/pages/qr_scanner_page.dart';
+import 'package:my_tool_shed/services/notification_service.dart';
+import 'package:my_tool_shed/services/qr_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +23,59 @@ class DashboardPageState extends State<DashboardPage> {
   final List<Tool> _tools = [];
   static const String _toolskey = 'tools_list'; //Key for SharedPreferences
   bool _isLoading = true;
+
+  // Helper method to get tools that are due soon or need maintenance
+  List<Tool> _getDueSoonTools() {
+    final now = DateTime.now();
+    return _tools.where((tool) {
+      if (tool.isBorrowed && tool.returnDate != null) {
+        final daysUntilDue = tool.returnDate!.difference(now).inDays;
+        return daysUntilDue <= 7; // Due within a week
+      }
+      if (tool.maintenanceInterval > 0 && tool.lastMaintenance != null) {
+        return tool.daysUntilMaintenance() <=
+            7; // Maintenance due within a week
+      }
+      return false;
+    }).toList()
+      ..sort((a, b) {
+        final aDate = a.isBorrowed
+            ? a.returnDate!
+            : a.lastMaintenance!.add(Duration(days: a.maintenanceInterval));
+        final bDate = b.isBorrowed
+            ? b.returnDate!
+            : b.lastMaintenance!.add(Duration(days: b.maintenanceInterval));
+        return aDate.compareTo(bDate);
+      });
+  }
+
+  // Helper method to get regular tools (not due soon)
+  List<Tool> _getRegularTools() {
+    final dueSoonTools = _getDueSoonTools();
+    return _tools.where((tool) => !dueSoonTools.contains(tool)).toList();
+  }
+
+  // Helper method to get status text and color for a tool
+  (String, Color) _getToolStatus(Tool tool, BuildContext context) {
+    final now = DateTime.now();
+    if (tool.isBorrowed && tool.returnDate != null) {
+      final daysUntilDue = tool.returnDate!.difference(now).inDays;
+      if (daysUntilDue < 0) {
+        return ('Overdue by ${-daysUntilDue} days', Colors.red);
+      } else if (daysUntilDue <= 7) {
+        return ('Due in $daysUntilDue days', Colors.orange);
+      }
+    }
+    if (tool.needsMaintenance()) {
+      return ('Maintenance Overdue', Colors.red);
+    } else if (tool.maintenanceInterval > 0 && tool.lastMaintenance != null) {
+      final daysUntil = tool.daysUntilMaintenance();
+      if (daysUntil <= 7) {
+        return ('Maintenance due in $daysUntil days', Colors.orange);
+      }
+    }
+    return (tool.isBorrowed ? 'Borrowed' : 'Available', Colors.green);
+  }
 
   @override
   void initState() {
@@ -174,9 +230,13 @@ class DashboardPageState extends State<DashboardPage> {
 
   // Method to show the Borrow/Return dialog
   void _showBorrowReturnDialog(Tool tool) {
-    final borrowerController = TextEditingController(
-      text: tool.borrowedBy ?? '',
-    );
+    final borrowerNameController =
+        TextEditingController(text: tool.borrowedBy ?? '');
+    final borrowerPhoneController =
+        TextEditingController(text: tool.borrowerPhone ?? '');
+    final borrowerEmailController =
+        TextEditingController(text: tool.borrowerEmail ?? '');
+    final notesController = TextEditingController(text: tool.notes ?? '');
     DateTime? selectedReturnDate = tool.returnDate;
 
     showDialog(
@@ -200,7 +260,7 @@ class DashboardPageState extends State<DashboardPage> {
             }
 
             Future<void> handleBorrowReturn() async {
-              final String borrowerName = borrowerController.text.trim();
+              final String borrowerName = borrowerNameController.text.trim();
               if (!tool.isBorrowed &&
                   (borrowerName.isEmpty || selectedReturnDate == null)) {
                 if (dialogContext.mounted) {
@@ -216,14 +276,56 @@ class DashboardPageState extends State<DashboardPage> {
 
               try {
                 if (tool.isBorrowed) {
+                  // Create history entry for the return
+                  final history =
+                      tool.borrowHistory.lastWhere((h) => h.returnDate == null);
+                  final updatedHistory = BorrowHistory(
+                    borrowerId: history.borrowerId,
+                    borrowerName: history.borrowerName,
+                    borrowerPhone: history.borrowerPhone,
+                    borrowerEmail: history.borrowerEmail,
+                    borrowDate: history.borrowDate,
+                    dueDate: history.dueDate,
+                    returnDate: DateTime.now(),
+                    notes: notesController.text.trim(),
+                  );
+
+                  tool.borrowHistory[tool.borrowHistory.indexOf(history)] =
+                      updatedHistory;
                   tool.isBorrowed = false;
                   tool.borrowedBy = null;
+                  tool.borrowerPhone = null;
+                  tool.borrowerEmail = null;
                   tool.returnDate = null;
+                  tool.notes = null;
+
+                  // Cancel any existing notifications
+                  await NotificationService().cancelToolNotifications(tool);
                 } else {
+                  // Create new borrow entry
+                  final newHistory = BorrowHistory(
+                    borrowerId:
+                        DateTime.now().millisecondsSinceEpoch.toString(),
+                    borrowerName: borrowerName,
+                    borrowerPhone: borrowerPhoneController.text.trim(),
+                    borrowerEmail: borrowerEmailController.text.trim(),
+                    borrowDate: DateTime.now(),
+                    dueDate: selectedReturnDate!,
+                    notes: notesController.text.trim(),
+                  );
+
+                  tool.borrowHistory.add(newHistory);
                   tool.isBorrowed = true;
                   tool.borrowedBy = borrowerName;
+                  tool.borrowerPhone = borrowerPhoneController.text.trim();
+                  tool.borrowerEmail = borrowerEmailController.text.trim();
                   tool.returnDate = selectedReturnDate;
+                  tool.notes = notesController.text.trim();
+
+                  // Schedule return reminder
+                  await NotificationService().scheduleReturnReminder(tool);
                 }
+
                 setState(() {});
                 await _saveTools();
                 if (dialogContext.mounted) {
@@ -238,53 +340,169 @@ class DashboardPageState extends State<DashboardPage> {
               }
             }
 
+            void showBorrowHistory() {
+              showDialog(
+                context: dialogContext,
+                builder: (BuildContext historyContext) {
+                  return AlertDialog(
+                    title: Text('${tool.name} - Borrow History'),
+                    content: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: tool.borrowHistory.map((history) {
+                          return Card(
+                            child: ListTile(
+                              title: Text(history.borrowerName),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                      'Borrowed: ${DateFormat.yMd().format(history.borrowDate)}'),
+                                  Text(
+                                      'Due: ${DateFormat.yMd().format(history.dueDate)}'),
+                                  if (history.returnDate != null)
+                                    Text(
+                                        'Returned: ${DateFormat.yMd().format(history.returnDate!)}'),
+                                  if (history.notes?.isNotEmpty ?? false)
+                                    Text('Notes: ${history.notes}'),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        child: const Text('Close'),
+                        onPressed: () => Navigator.of(historyContext).pop(),
+                      ),
+                    ],
+                  );
+                },
+              );
+            }
+
+            void showQRCode() {
+              showDialog(
+                context: dialogContext,
+                builder: (BuildContext qrContext) {
+                  return AlertDialog(
+                    title: Text('${tool.name} - QR Code'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        QRService.generateToolQRCode(tool),
+                        const SizedBox(height: 16),
+                        const Text(
+                            'Scan this code to quickly check out this tool'),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        child: const Text('Close'),
+                        onPressed: () => Navigator.of(qrContext).pop(),
+                      ),
+                    ],
+                  );
+                },
+              );
+            }
+
             return AlertDialog(
               title: Text(tool.isBorrowed ? 'Return Tool' : 'Borrow Tool'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (tool.imagePath != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Image.file(
-                        File(tool.imagePath!),
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  Text('Tool: ${tool.name}'),
-                  if (!tool.isBorrowed) ...[
-                    TextField(
-                      controller: borrowerController,
-                      decoration: const InputDecoration(
-                        hintText: "Borrowed by?",
-                      ),
-                      autofocus: true,
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          selectedReturnDate == null
-                              ? 'Select return date'
-                              : 'Return by: ${DateFormat.yMd().format(selectedReturnDate!)}',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (tool.imagePath != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Image.file(
+                          File(tool.imagePath!),
+                          height: 100,
+                          fit: BoxFit.cover,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.calendar_today),
-                          onPressed: handleDatePicker,
+                      ),
+                    Text('Tool: ${tool.name}'),
+                    if (!tool.isBorrowed) ...[
+                      TextField(
+                        controller: borrowerNameController,
+                        decoration: const InputDecoration(
+                          labelText: "Borrower Name",
+                          hintText: "Enter borrower's name",
+                        ),
+                        autofocus: true,
+                      ),
+                      TextField(
+                        controller: borrowerPhoneController,
+                        decoration: const InputDecoration(
+                          labelText: "Phone Number",
+                          hintText: "Enter borrower's phone",
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      TextField(
+                        controller: borrowerEmailController,
+                        decoration: const InputDecoration(
+                          labelText: "Email",
+                          hintText: "Enter borrower's email",
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            selectedReturnDate == null
+                                ? 'Select return date'
+                                : 'Return by: ${DateFormat.yMd().format(selectedReturnDate!)}',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.calendar_today),
+                            onPressed: handleDatePicker,
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (tool.isBorrowed) ...[
+                      Text(
+                          'Currently borrowed by: ${tool.borrowedBy ?? 'Unknown'}'),
+                      if (tool.borrowerPhone != null)
+                        Text('Phone: ${tool.borrowerPhone}'),
+                      if (tool.borrowerEmail != null)
+                        Text('Email: ${tool.borrowerEmail}'),
+                      if (tool.returnDate != null)
+                        Text(
+                            'Return date: ${DateFormat.yMd().format(tool.returnDate!)}'),
+                    ],
+                    TextField(
+                      controller: notesController,
+                      decoration: const InputDecoration(
+                        labelText: "Notes",
+                        hintText: "Add any notes about the borrowing",
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        TextButton.icon(
+                          icon: const Icon(Icons.history),
+                          label: const Text('History'),
+                          onPressed: showBorrowHistory,
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.qr_code),
+                          label: const Text('QR Code'),
+                          onPressed: showQRCode,
                         ),
                       ],
                     ),
                   ],
-                  if (tool.isBorrowed) ...[
-                    Text(
-                        'Currently borrowed by: ${tool.borrowedBy ?? 'Unknown'}'),
-                    if (tool.returnDate != null)
-                      Text(
-                          'Return date: ${DateFormat.yMd().format(tool.returnDate!)}'),
-                  ],
-                ],
+                ),
               ),
               actions: <Widget>[
                 TextButton(
@@ -350,75 +568,143 @@ class DashboardPageState extends State<DashboardPage> {
       );
     }
 
+    final dueSoonTools = _getDueSoonTools();
+    final regularTools = _getRegularTools();
+
     return Scaffold(
       appBar: AppBar(title: const Text('My Tool Shed - Dashboard')),
       body: _tools.isEmpty
           ? const Center(child: Text('No tools yet. Add some!'))
-          : ListView.builder(
-              itemCount: _tools.length,
-              itemBuilder: (context, index) {
-                final tool = _tools[index];
-                return ListTile(
-                  leading: tool.imagePath != null &&
-                          File(tool.imagePath!).existsSync()
-                      ? SizedBox(
-                          width: 50,
-                          height: 50,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8.0),
-                            child: Image.file(
-                              File(tool.imagePath!),
-                              fit: BoxFit.cover,
-                              frameBuilder: (context, child, frame,
-                                  wasSynchronouslyLoaded) {
-                                if (frame == null) {
-                                  return const Center(
-                                      child: CircularProgressIndicator());
-                                }
-                                return child;
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.construction, size: 40);
-                              },
+          : ListView(
+              children: [
+                if (dueSoonTools.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8.0),
+                    color: Colors.amber.shade50,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text(
+                            'Due Soon',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        )
-                      : const Icon(Icons.construction, size: 40),
-                  title: Text(tool.name),
-                  subtitle: tool.isBorrowed
-                      ? Text(
-                          'Borrowed by: ${tool.borrowedBy ?? 'Unknown'}\nReturn by: ${tool.returnDate != null ? DateFormat.yMd().format(tool.returnDate!) : 'N/A'}',
-                        )
-                      : const Text('Available'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        tool.isBorrowed
-                            ? Icons.handshake_outlined
-                            : Icons.check_circle_outline,
-                        color: tool.isBorrowed ? Colors.orange : Colors.green,
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.redAccent,
                         ),
-                        onPressed: () => _deleteTool(tool),
-                        tooltip: 'Delete Tool',
-                      ),
-                    ],
+                        ...dueSoonTools.map((tool) => _buildToolTile(tool)),
+                      ],
+                    ),
                   ),
-                  onTap: () => _showBorrowReturnDialog(tool),
-                  onLongPress: () => _deleteTool(tool),
-                );
-              },
+                  const Divider(thickness: 2),
+                ],
+                ...regularTools.map((tool) => _buildToolTile(tool)),
+              ],
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddToolDialog,
-        tooltip: 'Add Tool',
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'qr_scan',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRScannerPage(
+                    onToolScanned: (scannedTool) {
+                      final existingTool = _tools.firstWhere(
+                        (t) => t.id == scannedTool.id,
+                        orElse: () => scannedTool,
+                      );
+                      _showBorrowReturnDialog(existingTool);
+                    },
+                  ),
+                ),
+              );
+            },
+            child: const Icon(Icons.qr_code_scanner),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: 'add_tool',
+            onPressed: _showAddToolDialog,
+            tooltip: 'Add Tool',
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildToolTile(Tool tool) {
+    final (statusText, statusColor) = _getToolStatus(tool, context);
+
+    return ListTile(
+      leading: tool.imagePath != null && File(tool.imagePath!).existsSync()
+          ? SizedBox(
+              width: 50,
+              height: 50,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.0),
+                child: Image.file(
+                  File(tool.imagePath!),
+                  fit: BoxFit.cover,
+                  frameBuilder:
+                      (context, child, frame, wasSynchronouslyLoaded) {
+                    if (frame == null) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    return child;
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.construction, size: 40);
+                  },
+                ),
+              ),
+            )
+          : const Icon(Icons.construction, size: 40),
+      title: Text(tool.name),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            statusText,
+            style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+          ),
+          if (tool.isBorrowed && tool.borrowedBy != null)
+            Text('Borrowed by: ${tool.borrowedBy}'),
+          if (tool.category != null)
+            Text(
+              'Category: ${tool.category}',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+            ),
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            tool.isBorrowed
+                ? Icons.handshake_outlined
+                : Icons.check_circle_outline,
+            color: statusColor,
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.delete_outline,
+              color: Colors.redAccent,
+            ),
+            onPressed: () => _deleteTool(tool),
+            tooltip: 'Delete Tool',
+          ),
+        ],
+      ),
+      onTap: () => _showBorrowReturnDialog(tool),
+      onLongPress: () => _deleteTool(tool),
     );
   }
 }

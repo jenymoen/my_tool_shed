@@ -1,0 +1,70 @@
+com.example.my_tool_shed.app-preference-1.2.1-0 C:\Users\jens_\.gradle\caches\8.12\transforms\071460d7fbdafaa9c533971a8789588c\transformed\preference-1.2.1\res
+com.example.my_tool_shed.app-jetified-camera-lifecycle-1.3.1-1 C:\Users\jens_\.gradle\caches\8.12\transforms\0787032a51be43d10f6bb5a37637d306\transformed\jetified-camera-lifecycle-1.3.1\res
+com.example.my_tool_shed.app-jetified-profileinstaller-1.3.1-2 C:\Users\jens_\.gradle\caches\8.12\transforms\0c494e89f17afc28e7c13dcdab46d9ff\transformed\jetified-profileinstaller-1.3.1\res
+com.example.my_tool_shed.app-jetified-lifecycle-viewmodel-savedstate-2.7.0-3 C:\Users\jens_\.gradle\caches\8.12\transforms\0c4f21e25087abd990b2fe4cad0e2354\transformed\jetified-lifecycle-viewmodel-savedstate-2.7.0\res
+com.example.my_tool_shed.app-jetified-lifecycle-livedata-core-ktx-2.7.0-4 C:\Users\jens_\.gradle\caches\8.12\transforms\0e49e6bf1f43d1432833665d4cebe8da\transformed\jetified-lifecycle-livedata-core-ktx-2.7.0\res
+com.example.my_tool_shed.app-jetified-viewpager2-1.0.0-5 C:\Users\jens_\.gradle\caches\8.12\transforms\0ee849ee478c41979c6fd850c7ce521c\transformed\jetified-viewpager2-1.0.0\res
+com.example.my_tool_shed.app-jetified-datastore-preferences-release-6 C:\Users\jens_\.gradle\caches\8.12\transforms\13054826a6d8450cbfc291c3a3b110d7\transformed\jetified-datastore-preferences-release\res
+com.example.my_tool_shed.app-sqlite-framework-2.3.0-7 C:\Users\jens_\.gradle\caches\8.12\transforms\18b92b1368e3205d78233adcba9b6cd9\transformed\sqlite-framework-2.3.0\res
+com.example.my_tool_shed.app-lifecycle-runtime-2.7.0-8 C:\Users\jens_\.gradle\caches\8.12\transforms\197632cc9f69585211e4dfb887d118e4\transformed\lifecycle-runtime-2.7.0\res
+com.example.my_tool_shed.app-jetified-camera-core-1.3.1-9 C:\Users\jens_\.gradle\caches\8.12\transforms\1cbf9b000fa39cb7600a7e9e0cebbf61\transformed\jetified-camera-core-1.3.1\res
+com.example.my_tool_shed.app-core-runtime-2.2.0-10 C:\Users\jens_\.gradle\caches\8.12\transforms\1ff9c85d6aeb937033f93f3f6be8f5b5\transformed\core-runtime-2.2.0\res
+com.example.my_tool_shed.app-cardview-1.0.0-11 C:\Users\jens_\.gradle\caches\8.12\transforms\296ad1a9692cdc3f4d1dc14bcc07a623\transformed\cardview-1.0.0\res
+com.example.my_tool_shed.app-jetified-play-services-base-18.1.0-12 C:\Users\jens_\.gradle\caches\8.12\transforms\3733aec9188a23e76b6626b4e47a5718\transformed\jetified-play-services-base-18.1.0\res
+com.example.my_tool_shed.app-browser-1.8.0-13 C:\Users\jens_\.gradle\caches\8.12\transforms\3c7f6194b6f278053bf04b693110ee28\transformed\browser-1.8.0\res
+com.example.my_tool_shed.app-jetified-lifecycle-process-2.7.0-14 C:\Users\jens_\.gradle\caches\8.12\transforms\3e63d492510949558460ac99ae7442d2\transformed\jetified-lifecycle-process-2.7.0\res
+com.example.my_tool_shed.app-room-runtime-2.5.0-15 C:\Users\jens_\.gradle\caches\8.12\transforms\3eecdf3e5b4af6428e996146f659ed60\transformed\room-runtime-2.5.0\res
+com.example.my_tool_shed.app-jetified-activity-ktx-1.9.3-16 C:\Users\jens_\.gradle\caches\8.12\transforms\401403af870123d90c5d21d72d5a1f69\transformed\jetified-activity-ktx-1.9.3\res
+com.example.my_tool_shed.app-jetified-window-java-1.2.0-17 C:\Users\jens_\.gradle\caches\8.12\transforms\41deecdc4cc4ad99059c7d604e8cc466\transformed\jetified-window-java-1.2.0\res
+com.example.my_tool_shed.app-jetified-savedstate-ktx-1.2.1-18 C:\Users\jens_\.gradle\caches\8.12\transforms\4b4673b52808b421774a1e5b5e0b2d06\transformed\jetified-savedstate-ktx-1.2.1\res
+com.example.my_tool_shed.app-jetified-lifecycle-runtime-ktx-2.7.0-19 C:\Users\jens_\.gradle\caches\8.12\transforms\5375373f5e5e1a5bb1cae9e1dd711e6c\transformed\jetified-lifecycle-runtime-ktx-2.7.0\res
+com.example.my_tool_shed.app-jetified-startup-runtime-1.1.1-20 C:\Users\jens_\.gradle\caches\8.12\transforms\5ab48f9aa664988da798d7c06fcc38c8\transformed\jetified-startup-runtime-1.1.1\res
+com.example.my_tool_shed.app-coordinatorlayout-1.1.0-21 C:\Users\jens_\.gradle\caches\8.12\transforms\5f568a45ea956086b6a6b677bdea639d\transformed\coordinatorlayout-1.1.0\res
+com.example.my_tool_shed.app-jetified-annotation-experimental-1.4.0-22 C:\Users\jens_\.gradle\caches\8.12\transforms\6443180aa4d088baf9ed9e02d8ba8098\transformed\jetified-annotation-experimental-1.4.0\res
+com.example.my_tool_shed.app-drawerlayout-1.1.1-23 C:\Users\jens_\.gradle\caches\8.12\transforms\68258c9af843350e7ac1f7b248f684a4\transformed\drawerlayout-1.1.1\res
+com.example.my_tool_shed.app-fragment-1.7.1-24 C:\Users\jens_\.gradle\caches\8.12\transforms\69e4bfdf2da45fa78339343eb0068573\transformed\fragment-1.7.1\res
+com.example.my_tool_shed.app-media-1.7.0-25 C:\Users\jens_\.gradle\caches\8.12\transforms\7487629ca8b9499d0498047be0e789fe\transformed\media-1.7.0\res
+com.example.my_tool_shed.app-jetified-lifecycle-viewmodel-ktx-2.7.0-26 C:\Users\jens_\.gradle\caches\8.12\transforms\79b8a0fdb5d11603edca1c0e5e238255\transformed\jetified-lifecycle-viewmodel-ktx-2.7.0\res
+com.example.my_tool_shed.app-jetified-core-1.0.0-27 C:\Users\jens_\.gradle\caches\8.12\transforms\7af460e39279293fb86d11c83b837878\transformed\jetified-core-1.0.0\res
+com.example.my_tool_shed.app-transition-1.4.1-28 C:\Users\jens_\.gradle\caches\8.12\transforms\7e0413ed08a41d61e0c5565428615964\transformed\transition-1.4.1\res
+com.example.my_tool_shed.app-material-1.11.0-29 C:\Users\jens_\.gradle\caches\8.12\transforms\91921e3bcc9f441e2f30e8e1edea0c06\transformed\material-1.11.0\res
+com.example.my_tool_shed.app-constraintlayout-2.0.1-30 C:\Users\jens_\.gradle\caches\8.12\transforms\97337983a9c9e51290924dc66d776e93\transformed\constraintlayout-2.0.1\res
+com.example.my_tool_shed.app-jetified-appcompat-resources-1.6.1-31 C:\Users\jens_\.gradle\caches\8.12\transforms\97846dc1ea10f5d640be6d4dffd842b7\transformed\jetified-appcompat-resources-1.6.1\res
+com.example.my_tool_shed.app-jetified-core-ktx-1.13.1-32 C:\Users\jens_\.gradle\caches\8.12\transforms\9c881a98b7889491e0c9402ce0b24403\transformed\jetified-core-ktx-1.13.1\res
+com.example.my_tool_shed.app-jetified-tracing-1.2.0-33 C:\Users\jens_\.gradle\caches\8.12\transforms\9cdf42a7bf40366a130b38e8152b9ed1\transformed\jetified-tracing-1.2.0\res
+com.example.my_tool_shed.app-jetified-window-1.2.0-34 C:\Users\jens_\.gradle\caches\8.12\transforms\9e132d0fb89d0e8edaaa74f9efdbd044\transformed\jetified-window-1.2.0\res
+com.example.my_tool_shed.app-lifecycle-viewmodel-2.7.0-35 C:\Users\jens_\.gradle\caches\8.12\transforms\a0cfb201ce31003736016b269f4436a4\transformed\lifecycle-viewmodel-2.7.0\res
+com.example.my_tool_shed.app-jetified-datastore-release-36 C:\Users\jens_\.gradle\caches\8.12\transforms\a2b588a30cd345f574931e5d4f7ab0d6\transformed\jetified-datastore-release\res
+com.example.my_tool_shed.app-sqlite-2.3.0-37 C:\Users\jens_\.gradle\caches\8.12\transforms\ab29c8e0f669bb050d5628f699987523\transformed\sqlite-2.3.0\res
+com.example.my_tool_shed.app-jetified-emoji2-1.2.0-38 C:\Users\jens_\.gradle\caches\8.12\transforms\b70169a8a356b6230d74b96787f6c93e\transformed\jetified-emoji2-1.2.0\res
+com.example.my_tool_shed.app-recyclerview-1.1.0-39 C:\Users\jens_\.gradle\caches\8.12\transforms\b7881f9463b69b0aeca928c4920b8e02\transformed\recyclerview-1.1.0\res
+com.example.my_tool_shed.app-lifecycle-livedata-core-2.7.0-40 C:\Users\jens_\.gradle\caches\8.12\transforms\beb36d9e3c776b07d732e75c902aca8d\transformed\lifecycle-livedata-core-2.7.0\res
+com.example.my_tool_shed.app-jetified-play-services-basement-18.1.0-41 C:\Users\jens_\.gradle\caches\8.12\transforms\c04795cc4d6ebd1f1969aaef57321893\transformed\jetified-play-services-basement-18.1.0\res
+com.example.my_tool_shed.app-jetified-datastore-core-release-42 C:\Users\jens_\.gradle\caches\8.12\transforms\c1012db0c4a8043ba96bb06296ceb71e\transformed\jetified-datastore-core-release\res
+com.example.my_tool_shed.app-slidingpanelayout-1.2.0-43 C:\Users\jens_\.gradle\caches\8.12\transforms\c33881c03fa84882074c304c3f7e150e\transformed\slidingpanelayout-1.2.0\res
+com.example.my_tool_shed.app-jetified-fragment-ktx-1.7.1-44 C:\Users\jens_\.gradle\caches\8.12\transforms\c4e75d68db010c5efd2fc1d4697be367\transformed\jetified-fragment-ktx-1.7.1\res
+com.example.my_tool_shed.app-appcompat-1.6.1-45 C:\Users\jens_\.gradle\caches\8.12\transforms\c78cb959e9ab8a445c196319cab9de5c\transformed\appcompat-1.6.1\res
+com.example.my_tool_shed.app-jetified-savedstate-1.2.1-46 C:\Users\jens_\.gradle\caches\8.12\transforms\d9848b61b3701e09783de24c55215a44\transformed\jetified-savedstate-1.2.1\res
+com.example.my_tool_shed.app-lifecycle-livedata-2.7.0-47 C:\Users\jens_\.gradle\caches\8.12\transforms\dc3ec8852201e1e753719b965a0982b9\transformed\lifecycle-livedata-2.7.0\res
+com.example.my_tool_shed.app-jetified-lifecycle-service-2.7.0-48 C:\Users\jens_\.gradle\caches\8.12\transforms\e51f4ff04dab54a0c8f093e90d34b693\transformed\jetified-lifecycle-service-2.7.0\res
+com.example.my_tool_shed.app-lifecycle-reactivestreams-2.7.0-49 C:\Users\jens_\.gradle\caches\8.12\transforms\ea541149408b0175d4517f4584b3a8a0\transformed\lifecycle-reactivestreams-2.7.0\res
+com.example.my_tool_shed.app-localbroadcastmanager-1.1.0-50 C:\Users\jens_\.gradle\caches\8.12\transforms\f665e6a5da216a45093d146f7c7f1edc\transformed\localbroadcastmanager-1.1.0\res
+com.example.my_tool_shed.app-jetified-camera-camera2-1.3.1-51 C:\Users\jens_\.gradle\caches\8.12\transforms\f6d4ab42bb4e1fd9326ed045ccf31c2b\transformed\jetified-camera-camera2-1.3.1\res
+com.example.my_tool_shed.app-core-1.13.1-52 C:\Users\jens_\.gradle\caches\8.12\transforms\f9e43caef8056ac2c6ab01d54f00ab83\transformed\core-1.13.1\res
+com.example.my_tool_shed.app-jetified-activity-1.9.3-53 C:\Users\jens_\.gradle\caches\8.12\transforms\fab0956eb6336e8bcd6f4bb9e6d9196f\transformed\jetified-activity-1.9.3\res
+com.example.my_tool_shed.app-jetified-emoji2-views-helper-1.2.0-54 C:\Users\jens_\.gradle\caches\8.12\transforms\fd449a107470709c1ffc98111284ae9f\transformed\jetified-emoji2-views-helper-1.2.0\res
+com.example.my_tool_shed.app-debug-55 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\android\app\src\debug\res
+com.example.my_tool_shed.app-main-56 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\android\app\src\main\res
+com.example.my_tool_shed.app-pngs-57 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\app\generated\res\pngs\debug
+com.example.my_tool_shed.app-resValues-58 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\app\generated\res\resValues\debug
+com.example.my_tool_shed.app-packageDebugResources-59 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\app\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.example.my_tool_shed.app-packageDebugResources-60 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\app\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.example.my_tool_shed.app-debug-61 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\app\intermediates\merged_res\debug\mergeDebugResources
+com.example.my_tool_shed.app-debug-62 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\awesome_notifications\intermediates\packaged_res\debug\packageDebugResources
+com.example.my_tool_shed.app-debug-63 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\flutter_plugin_android_lifecycle\intermediates\packaged_res\debug\packageDebugResources
+com.example.my_tool_shed.app-debug-64 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\image_picker_android\intermediates\packaged_res\debug\packageDebugResources
+com.example.my_tool_shed.app-debug-65 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\mobile_scanner\intermediates\packaged_res\debug\packageDebugResources
+com.example.my_tool_shed.app-debug-66 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\path_provider_android\intermediates\packaged_res\debug\packageDebugResources
+com.example.my_tool_shed.app-debug-67 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\permission_handler_android\intermediates\packaged_res\debug\packageDebugResources
+com.example.my_tool_shed.app-debug-68 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\shared_preferences_android\intermediates\packaged_res\debug\packageDebugResources
+com.example.my_tool_shed.app-debug-69 C:\Users\jens_\OneDrive\Programmering\Flutter\My Tool Shed\my_tool_shed\build\url_launcher_android\intermediates\packaged_res\debug\packageDebugResources

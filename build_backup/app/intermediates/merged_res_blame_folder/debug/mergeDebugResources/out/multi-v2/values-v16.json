@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.my_tool_shed.app-mergeDebugResources-59:/values-v16/values-v16.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\jens_\\.gradle\\caches\\8.12\\transforms\\c78cb959e9ab8a445c196319cab9de5c\\transformed\\appcompat-1.6.1\\res\\values-v16\\values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "5",
+                        "endColumns": "12",
+                        "endOffsets": "223"
+                    }
+                }
+            ]
+        }
+    ]
+}

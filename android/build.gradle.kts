@@ -1,3 +1,17 @@
+buildscript {
+    val agpVersion by extra("8.2.0")
+    val kotlinVersion by extra("1.9.20")
+
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:$agpVersion")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -12,10 +26,11 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }
 
-tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
+tasks.register("clean", Delete::class) {
+    delete(rootProject.buildDir)
 }
