@@ -12,7 +12,27 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'My Tool Shed',
-      theme: ThemeData(primarySwatch: Colors.green, useMaterial3: true),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.green,
+          primary: Colors.green,
+        ),
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            color: Colors.black,
+            fontSize: 24.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.black,
+        ),
+      ),
       home: const DashboardPage(),
     );
   }
