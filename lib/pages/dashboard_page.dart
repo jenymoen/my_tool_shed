@@ -6,9 +6,9 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:my_tool_shed/models/tool.dart';
-import 'package:my_tool_shed/pages/qr_scanner_page.dart';
+// import 'package:my_tool_shed/pages/qr_scanner_page.dart';
 import 'package:my_tool_shed/services/notification_service.dart';
-import 'package:my_tool_shed/services/qr_service.dart';
+// import 'package:my_tool_shed/services/qr_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -421,29 +421,29 @@ class DashboardPageState extends State<DashboardPage> {
             }
 
             void showQRCode() {
-              showDialog(
-                context: dialogContext,
-                builder: (BuildContext qrContext) {
-                  return AlertDialog(
-                    title: Text('${tool.name} - QR Code'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        QRService.generateToolQRCode(tool),
-                        const SizedBox(height: 16),
-                        const Text(
-                            'Scan this code to quickly check out this tool'),
-                      ],
-                    ),
-                    actions: [
-                      TextButton(
-                        child: const Text('Close'),
-                        onPressed: () => Navigator.of(qrContext).pop(),
-                      ),
-                    ],
-                  );
-                },
-              );
+              // showDialog(
+              //   context: dialogContext,
+              //   builder: (BuildContext qrContext) {
+              //     return AlertDialog(
+              //       title: Text('${tool.name} - QR Code'),
+              //       content: Column(
+              //         mainAxisSize: MainAxisSize.min,
+              //         children: [
+              //           QRService.generateToolQRCode(tool),
+              //           const SizedBox(height: 16),
+              //           const Text(
+              //               'Scan this code to quickly check out this tool'),
+              //         ],
+              //       ),
+              //       actions: [
+              //         TextButton(
+              //           child: const Text('Close'),
+              //           onPressed: () => Navigator.of(qrContext).pop(),
+              //         ),
+              //       ],
+              //     );
+              //   },
+              // );
             }
 
             return AlertDialog(
@@ -531,11 +531,11 @@ class DashboardPageState extends State<DashboardPage> {
                           label: const Text('History'),
                           onPressed: showBorrowHistory,
                         ),
-                        TextButton.icon(
-                          icon: const Icon(Icons.qr_code),
-                          label: const Text('QR Code'),
-                          onPressed: showQRCode,
-                        ),
+                        // TextButton.icon(
+                        //   icon: const Icon(Icons.qr_code),
+                        //   label: const Text('QR Code'),
+                        //   onPressed: showQRCode,
+                        // ),
                       ],
                     ),
                   ],

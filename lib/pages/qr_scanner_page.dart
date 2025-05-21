@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:my_tool_shed/models/tool.dart';
-import 'package:my_tool_shed/services/qr_service.dart';
+// import 'package:my_tool_shed/services/qr_service.dart';
 
 class QRScannerPage extends StatefulWidget {
   final Function(Tool) onToolScanned;
