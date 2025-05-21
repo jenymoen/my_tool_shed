@@ -420,32 +420,6 @@ class DashboardPageState extends State<DashboardPage> {
               );
             }
 
-            void showQRCode() {
-              // showDialog(
-              //   context: dialogContext,
-              //   builder: (BuildContext qrContext) {
-              //     return AlertDialog(
-              //       title: Text('${tool.name} - QR Code'),
-              //       content: Column(
-              //         mainAxisSize: MainAxisSize.min,
-              //         children: [
-              //           QRService.generateToolQRCode(tool),
-              //           const SizedBox(height: 16),
-              //           const Text(
-              //               'Scan this code to quickly check out this tool'),
-              //         ],
-              //       ),
-              //       actions: [
-              //         TextButton(
-              //           child: const Text('Close'),
-              //           onPressed: () => Navigator.of(qrContext).pop(),
-              //         ),
-              //       ],
-              //     );
-              //   },
-              // );
-            }
-
             return AlertDialog(
               title: Text(tool.isBorrowed ? 'Return Tool' : 'Borrow Tool'),
               content: SingleChildScrollView(
@@ -531,11 +505,6 @@ class DashboardPageState extends State<DashboardPage> {
                           label: const Text('History'),
                           onPressed: showBorrowHistory,
                         ),
-                        // TextButton.icon(
-                        //   icon: const Icon(Icons.qr_code),
-                        //   label: const Text('QR Code'),
-                        //   onPressed: showQRCode,
-                        // ),
                       ],
                     ),
                   ],
