@@ -646,13 +646,16 @@ class DashboardPageState extends State<DashboardPage> {
                   ),
           ),
           if (_isAdLoaded)
-            Padding(
-              padding: const EdgeInsets.only(right: 20.0, bottom: 50.0),
-              child: Container(
-                alignment: Alignment.centerLeft,
-                height: _bannerAd?.size.height.toDouble(),
-                width: _bannerAd?.size.width.toDouble(),
-                child: AdWidget(ad: _bannerAd!),
+            Container(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 20.0, bottom: 125.0),
+                child: Container(
+                  alignment: Alignment.centerLeft,
+                  height: _bannerAd?.size.height.toDouble(),
+                  width: _bannerAd?.size.width.toDouble(),
+                  child: AdWidget(ad: _bannerAd!),
+                ),
               ),
             ),
         ],
