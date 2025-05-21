@@ -89,8 +89,7 @@ class DashboardPageState extends State<DashboardPage> {
 
   void _initBannerAd() {
     _bannerAd = BannerAd(
-      // TODO: Replace this test ad unit ID with your real ad unit ID
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      adUnitId: 'ca-app-pub-5326232965412305~2242713432',
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(

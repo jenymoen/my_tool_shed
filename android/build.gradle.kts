@@ -1,6 +1,6 @@
 buildscript {
-    val agpVersion by extra("8.2.0")
-    val kotlinVersion by extra("1.9.20")
+    val agpVersion by extra("8.2.1")
+    val kotlinVersion by extra("2.1.21")
 
     repositories {
         google()
