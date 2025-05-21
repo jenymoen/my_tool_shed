@@ -24,10 +24,10 @@ android {
         applicationId = "com.example.my_tool_shed"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 21  // Set minimum SDK version
+        minSdk = 23  // Updated from 21 to 23 for google_mobile_ads compatibility
         targetSdk = 35  // Updated to match compileSdk
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 1  // Increment this with each release
+        versionName = "1.0.0"  // User-visible version number
     }
 
     buildTypes {

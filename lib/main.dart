@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:my_tool_shed/pages/dashboard_page.dart';
 import 'package:my_tool_shed/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize the Mobile Ads SDK
+  await MobileAds.instance.initialize();
 
   // Initialize notifications
   await NotificationService().init();

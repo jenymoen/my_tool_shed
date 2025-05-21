@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:my_tool_shed/models/tool.dart';
@@ -23,6 +24,8 @@ class DashboardPageState extends State<DashboardPage> {
   final List<Tool> _tools = [];
   static const String _toolskey = 'tools_list'; //Key for SharedPreferences
   bool _isLoading = true;
+  BannerAd? _bannerAd;
+  bool _isAdLoaded = false;
 
   // Helper method to get tools that are due soon or need maintenance
   List<Tool> _getDueSoonTools() {
@@ -81,6 +84,35 @@ class DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _loadTools(); // Loads tools when the widget is initilized
+    _initBannerAd();
+  }
+
+  void _initBannerAd() {
+    _bannerAd = BannerAd(
+      // TODO: Replace this test ad unit ID with your real ad unit ID
+      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          print('Ad failed to load: $error');
+        },
+      ),
+    );
+
+    _bannerAd?.load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
   }
 
   // --- SharePreferences Logic ---
@@ -308,7 +340,9 @@ class DashboardPageState extends State<DashboardPage> {
                         DateTime.now().millisecondsSinceEpoch.toString(),
                     borrowerName: borrowerName,
                     borrowerPhone: borrowerPhoneController.text.trim(),
-                    borrowerEmail: borrowerEmailController.text.trim(),
+                    borrowerEmail: borrowerEmailController.text.trim().isEmpty
+                        ? null
+                        : borrowerEmailController.text.trim(),
                     borrowDate: DateTime.now(),
                     dueDate: selectedReturnDate!,
                     notes: notesController.text.trim(),
@@ -318,7 +352,10 @@ class DashboardPageState extends State<DashboardPage> {
                   tool.isBorrowed = true;
                   tool.borrowedBy = borrowerName;
                   tool.borrowerPhone = borrowerPhoneController.text.trim();
-                  tool.borrowerEmail = borrowerEmailController.text.trim();
+                  tool.borrowerEmail =
+                      borrowerEmailController.text.trim().isEmpty
+                          ? null
+                          : borrowerEmailController.text.trim();
                   tool.returnDate = selectedReturnDate;
                   tool.notes = notesController.text.trim();
 
@@ -573,60 +610,77 @@ class DashboardPageState extends State<DashboardPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('My Tool Shed - Dashboard')),
-      body: _tools.isEmpty
-          ? const Center(child: Text('No tools yet. Add some!'))
-          : ListView(
-              children: [
-                if (dueSoonTools.isNotEmpty) ...[
-                  Container(
-                    padding: const EdgeInsets.all(8.0),
-                    color: Colors.amber.shade50,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text(
-                            'Due Soon',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _tools.isEmpty
+                ? const Center(child: Text('No tools yet. Add some!'))
+                : ListView(
+                    children: [
+                      if (dueSoonTools.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.all(8.0),
+                          color: Colors.amber.shade50,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Text(
+                                  'Due Soon',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              ...dueSoonTools
+                                  .map((tool) => _buildToolTile(tool)),
+                            ],
                           ),
                         ),
-                        ...dueSoonTools.map((tool) => _buildToolTile(tool)),
+                        const Divider(thickness: 2),
                       ],
-                    ),
+                      ...regularTools.map((tool) => _buildToolTile(tool)),
+                    ],
                   ),
-                  const Divider(thickness: 2),
-                ],
-                ...regularTools.map((tool) => _buildToolTile(tool)),
-              ],
+          ),
+          if (_isAdLoaded)
+            Padding(
+              padding: const EdgeInsets.only(right: 20.0, bottom: 50.0),
+              child: Container(
+                alignment: Alignment.centerLeft,
+                height: _bannerAd?.size.height.toDouble(),
+                width: _bannerAd?.size.width.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
+              ),
             ),
+        ],
+      ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          FloatingActionButton(
-            heroTag: 'qr_scan',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => QRScannerPage(
-                    onToolScanned: (scannedTool) {
-                      final existingTool = _tools.firstWhere(
-                        (t) => t.id == scannedTool.id,
-                        orElse: () => scannedTool,
-                      );
-                      _showBorrowReturnDialog(existingTool);
-                    },
-                  ),
-                ),
-              );
-            },
-            child: const Icon(Icons.qr_code_scanner),
-          ),
-          const SizedBox(height: 16),
+          // FloatingActionButton(
+          //   heroTag: 'qr_scan',
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => QRScannerPage(
+          //           onToolScanned: (scannedTool) {
+          //             final existingTool = _tools.firstWhere(
+          //               (t) => t.id == scannedTool.id,
+          //               orElse: () => scannedTool,
+          //             );
+          //             _showBorrowReturnDialog(existingTool);
+          //           },
+          //         ),
+          //       ),
+          //     );
+          //   },
+          //   child: const Icon(Icons.qr_code_scanner),
+          // ),
+          // const SizedBox(height: 16),
           FloatingActionButton(
             heroTag: 'add_tool',
             onPressed: _showAddToolDialog,
