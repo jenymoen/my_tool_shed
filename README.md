@@ -1,16 +1,47 @@
-# my_tool_shed
+# My Tool Shed
 
-A new Flutter project.
+# My Tool Shed - Version 1.0.0  
 
-## Getting Started
+## What's New 
+- Initial release of My Tool Shed, a comprehensive tool management app 
 
-This project is a starting point for a Flutter application.
+## Features 
+- 📝 Add and manage your tools with detailed information 
+- 📸 Add photos to your tools for easy identification 
+- 🔔 Get notifications for tools that are due for return 
+- 📅 Track maintenance schedules for your tools 
+- 📱 Modern Material Design 3 interface 
+- 🔍 Easy search and filtering of tools 
+- 📊 Visual status indicators for tool availability 
+- 📝 Detailed borrowing history for each tool 
+- 📱 Support for Android 6.0 (Marshmallow) and above 
 
-A few resources to get you started if this is your first Flutter project:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Tool Management 
+- Add new tools with photos and descriptions 
+- Track tool status (available, borrowed, maintenance needed) 
+- Set maintenance intervals and get reminders 
+- View detailed tool history 
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Borrowing System 
+- Record borrower information (name, phone, email) 
+- Set return dates and get notifications 
+- Track borrowing history 
+- Mark tools as returned
+  
+## User Interface 
+- Clean and intuitive dashboard 
+- Color-coded status indicators 
+- Easy-to-use forms for adding and managing tools 
+- Responsive design for all screen sizes 
+
+## Technical Improvements 
+- Optimized performance 
+- Reduced app size 
+- Improved battery efficiency 
+- Enhanced stability 
+
+## Requirements 
+- Android 6.0 (Marshmallow) or higher 
+- Internet connection for notifications 
+- Camera permission for adding tool photos 
