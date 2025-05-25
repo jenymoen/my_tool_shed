@@ -186,6 +186,35 @@ class DashboardPageState extends State<DashboardPage> {
               }
             }
 
+            Future<void> handleTakePicture() async {
+              final ImagePicker picker = ImagePicker();
+              final XFile? image = await picker.pickImage(
+                source: ImageSource.camera,
+              );
+              if (image != null) {
+                try {
+                  final Directory appDir =
+                      await getApplicationDocumentsDirectory();
+                  final String fileName = p.basename(image.path);
+                  final String newPath = p.join(appDir.path, fileName);
+                  final File newImageFile =
+                      await File(image.path).copy(newPath);
+
+                  if (dialogContext.mounted) {
+                    setDialogState(() {
+                      tempImagePath = newImageFile.path;
+                    });
+                  }
+                } catch (e) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('Error processing image: $e')),
+                    );
+                  }
+                }
+              }
+            }
+
             Future<void> handleAddTool() async {
               final String name = nameController.text.trim();
               if (name.isNotEmpty) {
@@ -238,6 +267,11 @@ class DashboardPageState extends State<DashboardPage> {
                       icon: const Icon(Icons.image_search),
                       label: const Text('Select Image'),
                       onPressed: handleImageSelection,
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Take Picture'),
+                      onPressed: handleTakePicture,
                     ),
                   ],
                 ),
