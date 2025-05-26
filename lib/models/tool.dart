@@ -4,6 +4,7 @@ class Tool {
   String id;
   String name;
   String? imagePath;
+  String? brand;
   bool isBorrowed;
   DateTime? returnDate;
   String? borrowedBy;
@@ -13,13 +14,12 @@ class Tool {
   String? notes;
   String? qrCode;
   String? category;
-  int maintenanceInterval; // in days
-  DateTime? lastMaintenance;
 
   Tool({
     required this.id,
     required this.name,
     this.imagePath,
+    this.brand,
     this.isBorrowed = false,
     this.returnDate,
     this.borrowedBy,
@@ -29,14 +29,13 @@ class Tool {
     this.notes,
     this.qrCode,
     this.category,
-    this.maintenanceInterval = 0,
-    this.lastMaintenance,
   }) : borrowHistory = borrowHistory ?? [];
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
         'imagePath': imagePath,
+        'brand': brand,
         'isBorrowed': isBorrowed,
         'returnDate': returnDate?.toIso8601String(),
         'borrowedBy': borrowedBy,
@@ -46,14 +45,13 @@ class Tool {
         'notes': notes,
         'qrCode': qrCode,
         'category': category,
-        'maintenanceInterval': maintenanceInterval,
-        'lastMaintenance': lastMaintenance?.toIso8601String(),
       };
 
   factory Tool.fromJson(Map<String, dynamic> json) => Tool(
         id: json['id'] as String,
         name: json['name'] as String,
         imagePath: json['imagePath'] as String?,
+        brand: json['brand'] as String?,
         isBorrowed: json['isBorrowed'] as bool,
         returnDate: json['returnDate'] == null
             ? null
@@ -68,31 +66,11 @@ class Tool {
         notes: json['notes'] as String?,
         qrCode: json['qrCode'] as String?,
         category: json['category'] as String?,
-        maintenanceInterval: json['maintenanceInterval'] as int? ?? 0,
-        lastMaintenance: json['lastMaintenance'] == null
-            ? null
-            : DateTime.parse(json['lastMaintenance'] as String),
       );
-
-  bool needsMaintenance() {
-    if (maintenanceInterval == 0 || lastMaintenance == null) return false;
-    final daysUntilMaintenance = lastMaintenance!
-        .add(Duration(days: maintenanceInterval))
-        .difference(DateTime.now())
-        .inDays;
-    return daysUntilMaintenance <= 0;
-  }
-
-  int daysUntilMaintenance() {
-    if (maintenanceInterval == 0 || lastMaintenance == null) return -1;
-    return lastMaintenance!
-        .add(Duration(days: maintenanceInterval))
-        .difference(DateTime.now())
-        .inDays;
-  }
 }
 
 class BorrowHistory {
+  final String id;
   final String borrowerId;
   final String borrowerName;
   final String? borrowerPhone;
@@ -103,6 +81,7 @@ class BorrowHistory {
   final String? notes;
 
   BorrowHistory({
+    required this.id,
     required this.borrowerId,
     required this.borrowerName,
     this.borrowerPhone,
@@ -114,6 +93,7 @@ class BorrowHistory {
   });
 
   Map<String, dynamic> toJson() => {
+        'id': id,
         'borrowerId': borrowerId,
         'borrowerName': borrowerName,
         'borrowerPhone': borrowerPhone,
@@ -125,6 +105,7 @@ class BorrowHistory {
       };
 
   factory BorrowHistory.fromJson(Map<String, dynamic> json) => BorrowHistory(
+        id: json['id'] as String,
         borrowerId: json['borrowerId'] as String,
         borrowerName: json['borrowerName'] as String,
         borrowerPhone: json['borrowerPhone'] as String?,
