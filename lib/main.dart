@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:my_tool_shed/pages/dashboard_page.dart';
 import 'package:my_tool_shed/services/notification_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // Assuming flutterfire configure generates this
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +13,10 @@ void main() async {
 
   // Initialize notifications
   await NotificationService().init();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const MyApp());
 }

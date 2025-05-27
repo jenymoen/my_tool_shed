@@ -406,14 +406,14 @@ class ToolsPageState extends State<ToolsPage> {
               final String borrowerName = borrowerNameController.text.trim();
               if (!tool.isBorrowed &&
                   (borrowerName.isEmpty || selectedReturnDate == null)) {
-                if (dialogContext.mounted)
+                if (dialogContext.mounted) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(
                       content: Text(
                           'Please enter borrower name and select return date.')));
+                }
                 return;
               }
               try {
-                String toolIdForHistory = tool.id;
                 if (tool.isBorrowed) {
                   final history =
                       tool.borrowHistory.lastWhere((h) => h.returnDate == null);
@@ -430,8 +430,9 @@ class ToolsPageState extends State<ToolsPage> {
                   );
                   await dbHelper.updateBorrowHistory(updatedHistory, tool.id);
                   final historyIndex = tool.borrowHistory.indexOf(history);
-                  if (historyIndex != -1)
+                  if (historyIndex != -1) {
                     tool.borrowHistory[historyIndex] = updatedHistory;
+                  }
 
                   tool.isBorrowed = false;
                   tool.borrowedBy = null;
