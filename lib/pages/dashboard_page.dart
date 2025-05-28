@@ -485,22 +485,29 @@ class DashboardPageState extends State<DashboardPage> {
     final notesController =
         TextEditingController(text: isBorrowing ? '' : tool.notes ?? '');
     DateTime? selectedReturnDate = isBorrowing ? null : tool.returnDate;
+    DateTime? selectedStartDate = isBorrowing ? DateTime.now() : null;
 
     showDialog(
       context: context, // Assuming this.context is the Page's context
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
-            Future<void> handleDatePicker() async {
+            Future<void> handleDatePicker(bool isStartDate) async {
               final DateTime? picked = await showDatePicker(
                 context: dialogContext,
-                initialDate: selectedReturnDate ?? DateTime.now(),
-                firstDate: DateTime.now(),
+                initialDate: isStartDate
+                    ? (selectedStartDate ?? DateTime.now())
+                    : (selectedReturnDate ?? DateTime.now()),
+                firstDate: isStartDate ? DateTime(2000) : DateTime.now(),
                 lastDate: DateTime(2101),
               );
-              if (picked != null && picked != selectedReturnDate) {
+              if (picked != null) {
                 setDialogState(() {
-                  selectedReturnDate = picked;
+                  if (isStartDate) {
+                    selectedStartDate = picked;
+                  } else {
+                    selectedReturnDate = picked;
+                  }
                 });
               }
             }
@@ -509,12 +516,14 @@ class DashboardPageState extends State<DashboardPage> {
               final String borrowerName = borrowerNameController.text.trim();
 
               if (isBorrowing &&
-                  (borrowerName.isEmpty || selectedReturnDate == null)) {
+                  (borrowerName.isEmpty ||
+                      selectedReturnDate == null ||
+                      selectedStartDate == null)) {
                 if (dialogContext.mounted) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     const SnackBar(
                         content: Text(
-                            'Please enter borrower name and select a return date.')),
+                            'Please enter borrower name and select both start and return dates.')),
                   );
                 }
                 return;
@@ -548,7 +557,7 @@ class DashboardPageState extends State<DashboardPage> {
                     borrowerEmail: borrowerEmailController.text.trim().isEmpty
                         ? null
                         : borrowerEmailController.text.trim(),
-                    borrowDate: DateTime.now(),
+                    borrowDate: selectedStartDate!,
                     dueDate: selectedReturnDate!,
                     notes: notesController.text.trim(),
                   );
@@ -732,12 +741,12 @@ class DashboardPageState extends State<DashboardPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(selectedReturnDate == null
-                              ? 'Select return date'
-                              : 'Return by: ${DateFormat.yMd().format(selectedReturnDate!)}'),
+                          Text(selectedStartDate == null
+                              ? 'Select start date'
+                              : 'Start date: ${DateFormat.yMd().format(selectedStartDate!)}'),
                           IconButton(
                             icon: const Icon(Icons.calendar_today),
-                            onPressed: handleDatePicker,
+                            onPressed: () => handleDatePicker(true),
                           )
                         ],
                       ),
@@ -761,6 +770,34 @@ class DashboardPageState extends State<DashboardPage> {
                               ? "Add any notes about borrowing"
                               : "Add any notes about the return"),
                       maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    if (isBorrowing) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(selectedStartDate == null
+                              ? 'Select start date'
+                              : 'Start date: ${DateFormat.yMd().format(selectedStartDate!)}'),
+                          IconButton(
+                            icon: const Icon(Icons.calendar_today),
+                            onPressed: () => handleDatePicker(true),
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(selectedReturnDate == null
+                            ? 'Select return date'
+                            : 'Return by: ${DateFormat.yMd().format(selectedReturnDate!)}'),
+                        IconButton(
+                          icon: const Icon(Icons.calendar_today),
+                          onPressed: () => handleDatePicker(false),
+                        )
+                      ],
                     ),
                     const SizedBox(height: 16),
                     TextButton.icon(
