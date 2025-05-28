@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:my_tool_shed/pages/dashboard_page.dart';
+import 'package:my_tool_shed/pages/login_page.dart';
+import 'package:my_tool_shed/services/auth_service.dart';
 import 'package:my_tool_shed/services/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart'; // Assuming flutterfire configure generates this
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,7 +53,21 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.black,
         ),
       ),
-      home: const DashboardPage(),
+      home: StreamBuilder<User?>(
+        stream: AuthService().authStateChanges,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+                body: Center(child: CircularProgressIndicator()));
+          }
+          if (snapshot.hasData && snapshot.data != null) {
+            // User is logged in
+            return const DashboardPage();
+          }
+          // User is not logged in
+          return const LoginPage();
+        },
+      ),
     );
   }
 }

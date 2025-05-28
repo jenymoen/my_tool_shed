@@ -1,4 +1,5 @@
 // import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Added for Timestamp
 
 class Tool {
   String id;
@@ -67,6 +68,47 @@ class Tool {
         qrCode: json['qrCode'] as String?,
         category: json['category'] as String?,
       );
+
+  // Firestore conversion
+  Map<String, dynamic> toFirestore() => {
+        // id is document ID, not stored in fields
+        'name': name,
+        'imagePath': imagePath,
+        'brand': brand,
+        'isBorrowed': isBorrowed,
+        'returnDate':
+            returnDate == null ? null : Timestamp.fromDate(returnDate!),
+        'borrowedBy': borrowedBy,
+        // borrowHistory will be a subcollection, not stored directly in the tool document
+        'borrowerPhone': borrowerPhone,
+        'borrowerEmail': borrowerEmail,
+        'notes': notes,
+        'qrCode': qrCode,
+        'category': category,
+      };
+
+  factory Tool.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot,
+      SnapshotOptions? options) {
+    final data = snapshot.data();
+    return Tool(
+      id: snapshot.id, // Get ID from DocumentSnapshot
+      name: data?['name'] as String,
+      imagePath: data?['imagePath'] as String?,
+      brand: data?['brand'] as String?,
+      isBorrowed: data?['isBorrowed'] as bool,
+      returnDate: data?['returnDate'] == null
+          ? null
+          : (data?['returnDate'] as Timestamp).toDate(),
+      borrowedBy: data?['borrowedBy'] as String?,
+      // borrowHistory will be loaded separately from its subcollection
+      borrowerPhone: data?['borrowerPhone'] as String?,
+      borrowerEmail: data?['borrowerEmail'] as String?,
+      notes: data?['notes'] as String?,
+      qrCode: data?['qrCode'] as String?,
+      category: data?['category'] as String?,
+      borrowHistory: [], // Initialize as empty, will be populated from subcollection
+    );
+  }
 }
 
 class BorrowHistory {
@@ -117,4 +159,38 @@ class BorrowHistory {
             : DateTime.parse(json['returnDate'] as String),
         notes: json['notes'] as String?,
       );
+
+  // Firestore conversion
+  Map<String, dynamic> toFirestore() => {
+        // id is document ID for subcollection, not stored in fields
+        'borrowerId':
+            borrowerId, // This might be the user ID or a unique ID for the borrower instance
+        'borrowerName': borrowerName,
+        'borrowerPhone': borrowerPhone,
+        'borrowerEmail': borrowerEmail,
+        'borrowDate': Timestamp.fromDate(borrowDate),
+        'dueDate': Timestamp.fromDate(dueDate),
+        'returnDate':
+            returnDate == null ? null : Timestamp.fromDate(returnDate!),
+        'notes': notes,
+      };
+
+  factory BorrowHistory.fromFirestore(
+      DocumentSnapshot<Map<String, dynamic>> snapshot,
+      SnapshotOptions? options) {
+    final data = snapshot.data();
+    return BorrowHistory(
+      id: snapshot.id, // Get ID from DocumentSnapshot
+      borrowerId: data?['borrowerId'] as String,
+      borrowerName: data?['borrowerName'] as String,
+      borrowerPhone: data?['borrowerPhone'] as String?,
+      borrowerEmail: data?['borrowerEmail'] as String?,
+      borrowDate: (data?['borrowDate'] as Timestamp).toDate(),
+      dueDate: (data?['dueDate'] as Timestamp).toDate(),
+      returnDate: data?['returnDate'] == null
+          ? null
+          : (data?['returnDate'] as Timestamp).toDate(),
+      notes: data?['notes'] as String?,
+    );
+  }
 }

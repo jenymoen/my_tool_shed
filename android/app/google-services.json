@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "152149271375",
+    "project_id": "my-tool-shed-8565f",
+    "storage_bucket": "my-tool-shed-8565f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:152149271375:android:afc4125c50607777c01b3a",
+        "android_client_info": {
+          "package_name": "com.lumin.my_tool_shed"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDD7D1WfiGdxrcprt45sj2uo_GSfceaZbU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

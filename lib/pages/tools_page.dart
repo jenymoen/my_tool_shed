@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,11 +5,14 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:my_tool_shed/models/tool.dart';
-import 'package:my_tool_shed/services/database_helper.dart';
+import 'package:my_tool_shed/services/firestore_service.dart';
 import 'package:my_tool_shed/services/notification_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:my_tool_shed/pages/dashboard_page.dart'; // For drawer navigation
+import 'package:my_tool_shed/services/auth_service.dart'; // Added for logout
+import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation after logout
+import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
 
 class ToolsPage extends StatefulWidget {
   const ToolsPage({super.key});
@@ -20,14 +22,11 @@ class ToolsPage extends StatefulWidget {
 }
 
 class ToolsPageState extends State<ToolsPage> {
-  final List<Tool> _allTools = [];
-  bool _isLoading = true;
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
-  final dbHelper = DatabaseHelper.instance;
+  final FirestoreService _firestoreService = FirestoreService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Predefined list of brands (can be moved to a shared location later)
   final List<String> _brandOptions = [
     'Bosch',
     'Makita',
@@ -43,7 +42,6 @@ class ToolsPageState extends State<ToolsPage> {
   @override
   void initState() {
     super.initState();
-    _loadAllTools();
     _initBannerAd();
   }
 
@@ -61,7 +59,6 @@ class ToolsPageState extends State<ToolsPage> {
         },
         onAdFailedToLoad: (ad, error) {
           ad.dispose();
-          print('Ad failed to load on ToolsPage: $error');
         },
       ),
     );
@@ -74,23 +71,6 @@ class ToolsPageState extends State<ToolsPage> {
     super.dispose();
   }
 
-  Future<void> _loadAllTools() async {
-    try {
-      setState(() => _isLoading = true);
-      final loadedTools = await dbHelper.getAllTools();
-      if (!mounted) return;
-      setState(() {
-        _allTools.clear();
-        _allTools.addAll(loadedTools);
-      });
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  // Helper method to get status text and color for a tool (can be refactored)
   (String, Color) _getToolStatus(Tool tool, BuildContext context) {
     final now = DateTime.now();
     if (tool.isBorrowed && tool.returnDate != null) {
@@ -104,7 +84,6 @@ class ToolsPageState extends State<ToolsPage> {
     return (tool.isBorrowed ? 'Borrowed' : 'Available', Colors.green);
   }
 
-  // Method to show the Add Tool dialog (can be refactored)
   void _showAddToolDialog() {
     final nameController = TextEditingController();
     String? tempImagePath;
@@ -167,14 +146,26 @@ class ToolsPageState extends State<ToolsPage> {
               final String name = nameController.text.trim();
               if (name.isNotEmpty) {
                 final newTool = Tool(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  id: '',
                   name: name,
                   imagePath: tempImagePath,
                   brand: _selectedBrand,
                 );
-                await dbHelper.insertTool(newTool);
-                _loadAllTools(); // Refresh list
-                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                try {
+                  await _firestoreService.addTool(newTool);
+                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content:
+                            Text('\\"${newTool.name}\\" added successfully.')),
+                  );
+                } catch (e) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('Failed to add tool: $e')),
+                    );
+                  }
+                }
               }
             }
 
@@ -239,7 +230,6 @@ class ToolsPageState extends State<ToolsPage> {
     );
   }
 
-  // New method to show Edit Tool Details Dialog
   void _showEditToolDetailsDialog(Tool tool) {
     final nameController = TextEditingController(text: tool.name);
     String? tempImagePath = tool.imagePath;
@@ -268,7 +258,8 @@ class ToolsPageState extends State<ToolsPage> {
                 } catch (e) {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(content: Text('Error processing image: $e')));
+                      SnackBar(content: Text('Error processing image: $e')),
+                    );
                   }
                 }
               }
@@ -292,7 +283,8 @@ class ToolsPageState extends State<ToolsPage> {
                 } catch (e) {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(content: Text('Error processing image: $e')));
+                      SnackBar(content: Text('Error processing image: $e')),
+                    );
                   }
                 }
               }
@@ -301,13 +293,36 @@ class ToolsPageState extends State<ToolsPage> {
             Future<void> handleUpdateToolDetails() async {
               final String name = nameController.text.trim();
               if (name.isNotEmpty) {
-                tool.name = name;
-                tool.imagePath = tempImagePath;
-                tool.brand = currentSelectedBrand;
-
-                await dbHelper.updateTool(tool);
-                _loadAllTools(); // Refresh list
-                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                final updatedTool = Tool(
+                  id: tool.id,
+                  name: name,
+                  imagePath: tempImagePath,
+                  brand: currentSelectedBrand,
+                  isBorrowed: tool.isBorrowed,
+                  returnDate: tool.returnDate,
+                  borrowedBy: tool.borrowedBy,
+                  borrowHistory: tool.borrowHistory,
+                  borrowerPhone: tool.borrowerPhone,
+                  borrowerEmail: tool.borrowerEmail,
+                  notes: tool.notes,
+                  qrCode: tool.qrCode,
+                  category: tool.category,
+                );
+                try {
+                  await _firestoreService.updateTool(updatedTool);
+                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            '\\"${updatedTool.name}\\" updated successfully.')),
+                  );
+                } catch (e) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('Failed to update tool: $e')),
+                    );
+                  }
+                }
               }
             }
 
@@ -374,7 +389,6 @@ class ToolsPageState extends State<ToolsPage> {
     );
   }
 
-  // Method to show the Borrow/Return dialog (can be refactored)
   void _showBorrowReturnDialog(Tool tool) {
     final borrowerNameController =
         TextEditingController(text: tool.borrowedBy ?? '');
@@ -413,40 +427,79 @@ class ToolsPageState extends State<ToolsPage> {
                 }
                 return;
               }
+
               try {
-                if (tool.isBorrowed) {
-                  final history =
-                      tool.borrowHistory.lastWhere((h) => h.returnDate == null);
-                  final updatedHistory = BorrowHistory(
-                    id: history.id,
-                    borrowerId: history.borrowerId,
-                    borrowerName: history.borrowerName,
-                    borrowerPhone: history.borrowerPhone,
-                    borrowerEmail: history.borrowerEmail,
-                    borrowDate: history.borrowDate,
-                    dueDate: history.dueDate,
-                    returnDate: DateTime.now(),
-                    notes: notesController.text.trim(),
-                  );
-                  await dbHelper.updateBorrowHistory(updatedHistory, tool.id);
-                  final historyIndex = tool.borrowHistory.indexOf(history);
-                  if (historyIndex != -1) {
-                    tool.borrowHistory[historyIndex] = updatedHistory;
+                Tool toolToUpdate = Tool(
+                  id: tool.id,
+                  name: tool.name,
+                  imagePath: tool.imagePath,
+                  brand: tool.brand,
+                  isBorrowed: tool.isBorrowed,
+                  returnDate: tool.returnDate,
+                  borrowedBy: tool.borrowedBy,
+                  borrowHistory: List<BorrowHistory>.from(tool.borrowHistory),
+                  borrowerPhone: tool.borrowerPhone,
+                  borrowerEmail: tool.borrowerEmail,
+                  notes: tool.notes,
+                  qrCode: tool.qrCode,
+                  category: tool.category,
+                );
+
+                if (toolToUpdate.isBorrowed) {
+                  List<BorrowHistory> historyList = await _firestoreService
+                      .getBorrowHistoryStream(toolToUpdate.id)
+                      .first;
+                  BorrowHistory? activeHistory;
+                  for (var h in historyList) {
+                    if (h.returnDate == null) {
+                      activeHistory = h;
+                      break;
+                    }
                   }
 
-                  tool.isBorrowed = false;
-                  tool.borrowedBy = null;
-                  tool.borrowerPhone = null;
-                  tool.borrowerEmail = null;
-                  tool.returnDate = null;
-                  tool.notes = null;
-                  await NotificationService().cancelToolNotifications(tool);
+                  if (activeHistory != null) {
+                    final updatedHistoryEntry = BorrowHistory(
+                      id: activeHistory.id,
+                      borrowerId: activeHistory.borrowerId,
+                      borrowerName: activeHistory.borrowerName,
+                      borrowerPhone: activeHistory.borrowerPhone,
+                      borrowerEmail: activeHistory.borrowerEmail,
+                      borrowDate: activeHistory.borrowDate,
+                      dueDate: activeHistory.dueDate,
+                      returnDate: DateTime.now(),
+                      notes: notesController.text.trim(),
+                    );
+                    await _firestoreService.updateBorrowHistory(
+                        toolToUpdate.id, updatedHistoryEntry);
+                  } else {
+                    final newHistoryEntry = BorrowHistory(
+                      id: '',
+                      borrowerId:
+                          _firestoreService.currentUser?.uid ?? 'system_return',
+                      borrowerName: toolToUpdate.borrowedBy ?? "Unknown",
+                      borrowDate: toolToUpdate.returnDate
+                              ?.subtract(const Duration(days: 1)) ??
+                          DateTime.now().subtract(const Duration(days: 1)),
+                      dueDate: toolToUpdate.returnDate ?? DateTime.now(),
+                      returnDate: DateTime.now(),
+                      notes: notesController.text.trim(),
+                    );
+                    await _firestoreService.addBorrowHistory(
+                        toolToUpdate.id, newHistoryEntry);
+                  }
+
+                  toolToUpdate.isBorrowed = false;
+                  toolToUpdate.borrowedBy = null;
+                  toolToUpdate.borrowerPhone = null;
+                  toolToUpdate.borrowerEmail = null;
+                  toolToUpdate.returnDate = null;
+                  await NotificationService()
+                      .cancelToolNotifications(toolToUpdate);
                 } else {
-                  final newHistoryId =
-                      DateTime.now().millisecondsSinceEpoch.toString();
-                  final newHistory = BorrowHistory(
-                    id: newHistoryId,
-                    borrowerId: newHistoryId,
+                  final newHistoryEntry = BorrowHistory(
+                    id: '',
+                    borrowerId:
+                        _firestoreService.currentUser?.uid ?? 'borrower_action',
                     borrowerName: borrowerName,
                     borrowerPhone: borrowerPhoneController.text.trim(),
                     borrowerEmail: borrowerEmailController.text.trim().isEmpty
@@ -456,65 +509,80 @@ class ToolsPageState extends State<ToolsPage> {
                     dueDate: selectedReturnDate!,
                     notes: notesController.text.trim(),
                   );
-                  await dbHelper.insertBorrowHistory(newHistory, tool.id);
-                  tool.borrowHistory.add(newHistory);
-                  tool.isBorrowed = true;
-                  tool.borrowedBy = borrowerName;
-                  tool.borrowerPhone = borrowerPhoneController.text.trim();
-                  tool.borrowerEmail =
+                  await _firestoreService.addBorrowHistory(
+                      toolToUpdate.id, newHistoryEntry);
+
+                  toolToUpdate.isBorrowed = true;
+                  toolToUpdate.borrowedBy = borrowerName;
+                  toolToUpdate.borrowerPhone =
+                      borrowerPhoneController.text.trim();
+                  toolToUpdate.borrowerEmail =
                       borrowerEmailController.text.trim().isEmpty
                           ? null
                           : borrowerEmailController.text.trim();
-                  tool.returnDate = selectedReturnDate;
-                  tool.notes = notesController.text.trim();
-                  await NotificationService().scheduleReturnReminder(tool);
+                  toolToUpdate.returnDate = selectedReturnDate;
+                  await NotificationService()
+                      .scheduleReturnReminder(toolToUpdate);
                 }
-                await dbHelper.updateTool(tool);
-                _loadAllTools(); // Refresh list
+
+                await _firestoreService.updateTool(toolToUpdate);
                 if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text(
+                          'Tool "${toolToUpdate.name}" ${toolToUpdate.isBorrowed ? "borrowed" : "returned"}.')),
+                );
               } catch (e) {
-                if (dialogContext.mounted)
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(content: Text('Error updating tool: $e')));
+                if (dialogContext.mounted) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(
+                      content: Text('Error updating tool status: $e')));
+                }
               }
             }
 
-            void showBorrowHistory() {
+            void showBorrowHistoryDialog() async {
+              List<BorrowHistory> historyToShow =
+                  await _firestoreService.getBorrowHistoryStream(tool.id).first;
+
               showDialog(
                 context: dialogContext,
-                builder: (BuildContext historyContext) {
+                builder: (BuildContext historyDialogContext) {
                   return AlertDialog(
                     title: Text('${tool.name} - Borrow History'),
                     content: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: tool.borrowHistory.map((history) {
-                          return Card(
-                            child: ListTile(
-                              title: Text(history.borrowerName),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                      'Borrowed: ${DateFormat.yMd().format(history.borrowDate)}'),
-                                  Text(
-                                      'Due: ${DateFormat.yMd().format(history.dueDate)}'),
-                                  if (history.returnDate != null)
-                                    Text(
-                                        'Returned: ${DateFormat.yMd().format(history.returnDate!)}'),
-                                  if (history.notes?.isNotEmpty ?? false)
-                                    Text('Notes: ${history.notes}'),
-                                ],
-                              ),
+                      child: historyToShow.isEmpty
+                          ? const Text('No borrow history for this tool.')
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: historyToShow.map((history) {
+                                return Card(
+                                  child: ListTile(
+                                    title: Text(history.borrowerName),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                            'Borrowed: ${DateFormat.yMd().format(history.borrowDate)}'),
+                                        Text(
+                                            'Due: ${DateFormat.yMd().format(history.dueDate)}'),
+                                        if (history.returnDate != null)
+                                          Text(
+                                              'Returned: ${DateFormat.yMd().format(history.returnDate!)}'),
+                                        if (history.notes?.isNotEmpty ?? false)
+                                          Text('Notes: ${history.notes}'),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                             ),
-                          );
-                        }).toList(),
-                      ),
                     ),
                     actions: [
                       TextButton(
                           child: const Text('Close'),
-                          onPressed: () => Navigator.of(historyContext).pop())
+                          onPressed: () =>
+                              Navigator.of(historyDialogContext).pop())
                     ],
                   );
                 },
@@ -522,7 +590,9 @@ class ToolsPageState extends State<ToolsPage> {
             }
 
             return AlertDialog(
-              title: Text(tool.isBorrowed ? 'Return Tool' : 'Borrow Tool'),
+              title: Text(tool.isBorrowed
+                  ? 'Return Tool: ${tool.name}'
+                  : 'Borrow Tool: ${tool.name}'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -577,9 +647,13 @@ class ToolsPageState extends State<ToolsPage> {
                     ],
                     TextField(
                         controller: notesController,
-                        decoration: const InputDecoration(
-                            labelText: "Notes",
-                            hintText: "Add any notes about the borrowing"),
+                        decoration: InputDecoration(
+                            labelText: tool.isBorrowed
+                                ? "Return Notes"
+                                : "Borrow Notes",
+                            hintText: tool.isBorrowed
+                                ? "Add any notes about the return"
+                                : "Add any notes about borrowing"),
                         maxLines: 3),
                     const SizedBox(height: 16),
                     Row(
@@ -588,7 +662,7 @@ class ToolsPageState extends State<ToolsPage> {
                           TextButton.icon(
                               icon: const Icon(Icons.history),
                               label: const Text('History'),
-                              onPressed: showBorrowHistory)
+                              onPressed: showBorrowHistoryDialog)
                         ]),
                   ],
                 ),
@@ -600,7 +674,7 @@ class ToolsPageState extends State<ToolsPage> {
                 TextButton(
                     onPressed: handleBorrowReturn,
                     child: Text(tool.isBorrowed
-                        ? 'Mark as returned'
+                        ? 'Mark as Returned'
                         : 'Mark as Borrowed')),
               ],
             );
@@ -615,20 +689,27 @@ class ToolsPageState extends State<ToolsPage> {
       context: context,
       builder: (BuildContext dialogContext) {
         Future<void> handleDelete() async {
-          final String toolId = tool.id;
-          await dbHelper.deleteTool(toolId);
-          _loadAllTools(); // Refresh list
-          if (dialogContext.mounted) {
-            Navigator.of(dialogContext).pop();
-            ScaffoldMessenger.of(dialogContext).showSnackBar(
-                SnackBar(content: Text('"${tool.name}" deleted.')));
+          try {
+            await _firestoreService.deleteAllBorrowHistoryForTool(tool.id);
+            await _firestoreService.deleteTool(tool.id);
+
+            if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('"${tool.name}" deleted successfully.')));
+          } catch (e) {
+            if (dialogContext.mounted) {
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to delete tool: $e')),
+              );
+            }
           }
         }
 
         return AlertDialog(
           title: const Text('Delete Tool'),
           content: Text(
-              'Are you sure you want to delete "${tool.name}"? This cannot be undone.'),
+              'Are you sure you want to delete "${tool.name}"? This will also delete its borrow history and cannot be undone.'),
           actions: <Widget>[
             TextButton(
                 child: const Text('Cancel'),
@@ -682,11 +763,12 @@ class ToolsPageState extends State<ToolsPage> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-              tool.isBorrowed
-                  ? Icons.handshake_outlined
-                  : Icons.check_circle_outline,
-              color: statusColor),
+          IconButton(
+            icon: Icon(tool.isBorrowed ? Icons.undo : Icons.redo_outlined),
+            color: statusColor,
+            tooltip: tool.isBorrowed ? 'Return Tool' : 'Borrow Tool',
+            onPressed: () => _showBorrowReturnDialog(tool),
+          ),
           IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
               onPressed: () => _deleteTool(tool),
@@ -694,18 +776,102 @@ class ToolsPageState extends State<ToolsPage> {
         ],
       ),
       onTap: () {
-        _showEditToolDetailsDialog(tool); // Always edit tool details on tap
+        _showEditToolDetailsDialog(tool);
       },
-      onLongPress: () => _deleteTool(tool),
+      onLongPress: () => _showBorrowReturnDialog(tool),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    final currentUser = AuthService().currentUser;
+    String displayName = currentUser?.displayName ?? 'User';
+    if (displayName.isEmpty) {
+      displayName = 'User';
+    }
+
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'My Tool Shed',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Hi, $displayName',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Dashboard (Borrowed Tools)'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const DashboardPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.build),
+            title: const Text('All Tools'),
+            onTap: () {
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Profile'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text('Logout'),
+            onTap: () async {
+              Navigator.pop(context);
+              await AuthService().signOut();
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (Route<dynamic> route) => false,
+                );
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -714,48 +880,31 @@ class ToolsPageState extends State<ToolsPage> {
             icon: const Icon(Icons.menu),
             onPressed: () => _scaffoldKey.currentState?.openDrawer()),
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            const DrawerHeader(
-                decoration: BoxDecoration(color: Colors.blue),
-                child: Text('Menu',
-                    style: TextStyle(color: Colors.white, fontSize: 24))),
-            ListTile(
-              leading: const Icon(Icons.dashboard),
-              title: const Text('Dashboard'),
-              onTap: () {
-                Navigator.pop(context); // Close drawer
-                Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const DashboardPage()));
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.construction),
-              title: const Text('Tools'),
-              onTap: () {
-                Navigator.pop(
-                    context); // Close drawer (already on Tools page, effectively a refresh if _loadAllTools is called)
-                _loadAllTools();
-              },
-            ),
-          ],
-        ),
-      ),
+      drawer: _buildDrawer(context),
       body: Column(
         children: [
           Expanded(
-            child: _allTools.isEmpty
-                ? const Center(child: Text('No tools yet. Add some!'))
-                : ListView.builder(
-                    itemCount: _allTools.length,
-                    itemBuilder: (context, index) {
-                      return _buildToolTile(_allTools[index]);
-                    },
-                  ),
+            child: StreamBuilder<List<Tool>>(
+              stream: _firestoreService.getToolsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No tools yet. Add some!'));
+                }
+                final tools = snapshot.data!;
+                return ListView.builder(
+                  itemCount: tools.length,
+                  itemBuilder: (context, index) {
+                    return _buildToolTile(tools[index]);
+                  },
+                );
+              },
+            ),
           ),
           if (_isAdLoaded)
             Container(
