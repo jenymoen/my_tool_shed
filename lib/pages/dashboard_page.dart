@@ -15,9 +15,17 @@ import 'package:my_tool_shed/pages/tools_page.dart'; // For drawer navigation
 import 'package:my_tool_shed/services/auth_service.dart'; // Added for logout
 import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation after logout
 import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
+import 'package:my_tool_shed/pages/settings_page.dart';
+import 'package:my_tool_shed/widgets/language_selector.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  final Function(Locale) onLocaleChanged;
+
+  const DashboardPage({
+    super.key,
+    required this.onLocaleChanged,
+  });
 
   @override
   State<DashboardPage> createState() => DashboardPageState();
@@ -173,6 +181,7 @@ class DashboardPageState extends State<DashboardPage> {
     if (displayName.isEmpty) {
       displayName = 'User';
     }
+    final l10n = AppLocalizations.of(context)!;
 
     return Drawer(
       child: ListView(
@@ -187,7 +196,7 @@ class DashboardPageState extends State<DashboardPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
-                  'My Tool Shed',
+                  l10n.appTitle,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: 24,
@@ -208,27 +217,29 @@ class DashboardPageState extends State<DashboardPage> {
           ),
           ListTile(
             leading: const Icon(Icons.home),
-            title: const Text('Dashboard (Borrowed Tools)'),
+            title: Text(l10n.dashboard),
             onTap: () {
               Navigator.pop(context);
-              // No need to reload, already on this page or StreamBuilder handles it
             },
           ),
           ListTile(
             leading: const Icon(Icons.build),
-            title: const Text('All Tools'),
+            title: Text(l10n.allTools),
             onTap: () {
               Navigator.pop(context);
               Navigator.pushReplacement(
-                // Or push if you want back navigation
                 context,
-                MaterialPageRoute(builder: (context) => const ToolsPage()),
+                MaterialPageRoute(
+                  builder: (context) => ToolsPage(
+                    onLocaleChanged: widget.onLocaleChanged,
+                  ),
+                ),
               );
             },
           ),
           ListTile(
             leading: const Icon(Icons.person),
-            title: const Text('Profile'),
+            title: Text(l10n.profile),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
@@ -237,10 +248,26 @@ class DashboardPageState extends State<DashboardPage> {
               );
             },
           ),
+          const Spacer(),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.settings),
+            title: Text(l10n.settings),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsPage(
+                    onLocaleChanged: widget.onLocaleChanged,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            title: Text(l10n.logout),
             onTap: () async {
               Navigator.pop(context);
               await AuthService().signOut();
@@ -259,10 +286,12 @@ class DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Text(l10n.dashboard),
         leading: IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () => _scaffoldKey.currentState?.openDrawer()),
@@ -279,17 +308,14 @@ class DashboardPageState extends State<DashboardPage> {
                 child: Text('Error loading tools: ${snapshot.error}'));
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-                child: Text('No tools found. Visit "All Tools" to add some.'));
+            return Center(child: Text(l10n.noToolsAvailable));
           }
 
           final allTools = snapshot.data!;
           final borrowedTools = _filterBorrowedTools(allTools);
 
           if (borrowedTools.isEmpty) {
-            return const Center(
-                child: Text(
-                    'No tools currently borrowed. Borrow one from "All Tools" or use the FAB.'));
+            return Center(child: Text(l10n.noToolsAvailable));
           }
 
           final overdueTools = _getOverdueTools(borrowedTools);
@@ -301,7 +327,7 @@ class DashboardPageState extends State<DashboardPage> {
           if (overdueTools.isNotEmpty) {
             listItems.add(Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text('Overdue (${overdueTools.length})',
+              child: Text('${l10n.overdue} (${overdueTools.length})',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Colors.red, fontWeight: FontWeight.bold)),
             ));
@@ -313,7 +339,7 @@ class DashboardPageState extends State<DashboardPage> {
           if (dueSoonTools.isNotEmpty) {
             listItems.add(Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text('Due Soon (${dueSoonTools.length})',
+              child: Text('${l10n.dueSoon} (${dueSoonTools.length})',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Colors.orange, fontWeight: FontWeight.bold)),
             ));
@@ -326,7 +352,7 @@ class DashboardPageState extends State<DashboardPage> {
             listItems.add(Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                  'Other Borrowed Items (${regularBorrowedTools.length})',
+                  '${l10n.otherBorrowedItems} (${regularBorrowedTools.length})',
                   style: Theme.of(context).textTheme.titleMedium),
             ));
             listItems.addAll(regularBorrowedTools
@@ -362,14 +388,15 @@ class DashboardPageState extends State<DashboardPage> {
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'borrow_tool_dashboard',
         onPressed: () => _showSelectToolToBorrowDialog(context),
-        tooltip: 'Borrow a Tool',
+        tooltip: l10n.borrowTool,
         icon: const Icon(Icons.add_shopping_cart),
-        label: const Text("Borrow Tool"),
+        label: Text(l10n.borrowTool),
       ),
     );
   }
 
   Widget _buildToolTile(Tool tool) {
+    final l10n = AppLocalizations.of(context)!;
     final (statusText, statusColor) = _getToolStatus(tool, context);
     return ListTile(
       leading: tool.imagePath != null && File(tool.imagePath!).existsSync()
@@ -396,16 +423,15 @@ class DashboardPageState extends State<DashboardPage> {
               style:
                   TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
           if (tool.brand != null && tool.brand!.isNotEmpty)
-            Text('Brand: ${tool.brand}'),
-          // Note: For dashboard, tool.borrowedBy should always be populated if it's in this list
-          Text('Borrowed by: ${tool.borrowedBy ?? 'N/A'}'),
+            Text(l10n.brand(tool.brand!)),
+          Text(l10n.borrowedBy(tool.borrowedBy ?? 'N/A')),
           if (tool.returnDate != null)
-            Text('Return by: ${DateFormat.yMd().format(tool.returnDate!)}'),
+            Text(l10n.returnBy(DateFormat.yMd().format(tool.returnDate!))),
         ],
       ),
       trailing: IconButton(
         icon: const Icon(Icons.undo), // Icon for returning a tool
-        tooltip: 'Return Tool',
+        tooltip: l10n.returnTool,
         onPressed: () => _showBorrowReturnDialog(tool, isBorrowing: false),
       ),
       onTap: () =>

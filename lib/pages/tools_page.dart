@@ -15,13 +15,18 @@ import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation aft
 import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
 
 class ToolsPage extends StatefulWidget {
-  const ToolsPage({super.key});
+  final Function(Locale) onLocaleChanged;
+
+  const ToolsPage({
+    super.key,
+    required this.onLocaleChanged,
+  });
 
   @override
-  State<ToolsPage> createState() => ToolsPageState();
+  State<ToolsPage> createState() => _ToolsPageState();
 }
 
-class ToolsPageState extends State<ToolsPage> {
+class _ToolsPageState extends State<ToolsPage> {
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
   final FirestoreService _firestoreService = FirestoreService();
@@ -828,7 +833,11 @@ class ToolsPageState extends State<ToolsPage> {
               Navigator.pop(context);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const DashboardPage()),
+                MaterialPageRoute(
+                  builder: (context) => DashboardPage(
+                    onLocaleChanged: widget.onLocaleChanged,
+                  ),
+                ),
               );
             },
           ),
