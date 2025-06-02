@@ -45,3 +45,18 @@
 - Android 6.0 (Marshmallow) or higher 
 - Internet connection for notifications 
 - Camera permission for adding tool photos 
+
+## Environment Setup
+
+1. Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+
+2. Update the `.env` file with your Firebase configuration values:
+- Get your Firebase configuration from the Firebase Console
+- Replace all placeholder values with your actual Firebase configuration
+
+3. Never commit the `.env` file to version control
+- The `.env` file contains sensitive information and should be kept private
+- Each developer should maintain their own `.env` file locally
