@@ -882,12 +882,6 @@ class _ToolsPageState extends State<ToolsPage> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(l10n.language),
-            trailing: LanguageSelector(onLocaleChanged: widget.onLocaleChanged),
-          ),
-          const Divider(),
-          ListTile(
             leading: const Icon(Icons.logout),
             title: Text(l10n.logout),
             onTap: () async {
@@ -912,7 +906,7 @@ class _ToolsPageState extends State<ToolsPage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('All Tools'),
+        title: Text(AppLocalizations.of(context)!.allTools),
         leading: IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () => _scaffoldKey.currentState?.openDrawer()),
