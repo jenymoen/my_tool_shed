@@ -13,6 +13,9 @@ import 'package:my_tool_shed/pages/dashboard_page.dart'; // For drawer navigatio
 import 'package:my_tool_shed/services/auth_service.dart'; // Added for logout
 import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation after logout
 import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
+import 'package:my_tool_shed/pages/settings_page.dart'; // Added for SettingsPage navigation
+import 'package:my_tool_shed/widgets/language_selector.dart'; // Added for LanguageSelector
+import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added for AppLocalizations
 
 class ToolsPage extends StatefulWidget {
   final Function(Locale) onLocaleChanged;
@@ -793,6 +796,7 @@ class _ToolsPageState extends State<ToolsPage> {
     if (displayName.isEmpty) {
       displayName = 'User';
     }
+    final l10n = AppLocalizations.of(context)!;
 
     return Drawer(
       child: ListView(
@@ -807,7 +811,7 @@ class _ToolsPageState extends State<ToolsPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
-                  'My Tool Shed',
+                  l10n.appTitle,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onPrimary,
                     fontSize: 24,
@@ -828,7 +832,7 @@ class _ToolsPageState extends State<ToolsPage> {
           ),
           ListTile(
             leading: const Icon(Icons.home),
-            title: const Text('Dashboard (Borrowed Tools)'),
+            title: Text(l10n.dashboard),
             onTap: () {
               Navigator.pop(context);
               Navigator.pushReplacement(
@@ -843,33 +847,57 @@ class _ToolsPageState extends State<ToolsPage> {
           ),
           ListTile(
             leading: const Icon(Icons.build),
-            title: const Text('All Tools'),
+            title: Text(l10n.allTools),
             onTap: () {
               Navigator.pop(context);
             },
           ),
           ListTile(
             leading: const Icon(Icons.person),
-            title: const Text('Profile'),
+            title: Text(l10n.profile),
             onTap: () {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ProfilePage()),
+                MaterialPageRoute(
+                  builder: (context) => const ProfilePage(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: Text(l10n.settings),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsPage(
+                    onLocaleChanged: widget.onLocaleChanged,
+                  ),
+                ),
               );
             },
           ),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.language),
+            title: Text(l10n.language),
+            trailing: LanguageSelector(onLocaleChanged: widget.onLocaleChanged),
+          ),
+          const Divider(),
+          ListTile(
             leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            title: Text(l10n.logout),
             onTap: () async {
-              Navigator.pop(context);
               await AuthService().signOut();
-              if (mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (Route<dynamic> route) => false,
+              if (context.mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginPage(),
+                  ),
                 );
               }
             },
@@ -903,7 +931,8 @@ class _ToolsPageState extends State<ToolsPage> {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No tools yet. Add some!'));
+                  return Center(
+                      child: Text(AppLocalizations.of(context)!.noToolsYet));
                 }
                 final tools = snapshot.data!;
                 return ListView.builder(

@@ -42,5 +42,6 @@
     "spanish": "Español",
     "french": "Francés",
     "norwegian": "Noruego",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "noToolsYet": "Aún no hay herramientas. ¡Agrega algunas!"
 } 
