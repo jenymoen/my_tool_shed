@@ -14,7 +14,7 @@ import 'package:my_tool_shed/services/auth_service.dart'; // Added for logout
 import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation after logout
 import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
 import 'package:my_tool_shed/pages/settings_page.dart'; // Added for SettingsPage navigation
-import 'package:my_tool_shed/widgets/language_selector.dart'; // Added for LanguageSelector
+// import 'package:my_tool_shed/widgets/language_selector.dart'; // Added for LanguageSelector
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added for AppLocalizations
 
 class ToolsPage extends StatefulWidget {
@@ -780,25 +780,11 @@ class _ToolsPageState extends State<ToolsPage> {
                     TextStyle(color: Theme.of(context).colorScheme.secondary)),
         ],
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: Icon(tool.isBorrowed ? Icons.undo : Icons.redo_outlined),
-            color: statusColor,
-            tooltip: tool.isBorrowed ? 'Return Tool' : 'Borrow Tool',
-            onPressed: () => _showBorrowReturnDialog(tool),
-          ),
-          IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              onPressed: () => _deleteTool(tool),
-              tooltip: 'Delete Tool'),
-        ],
-      ),
-      onTap: () {
-        _showEditToolDetailsDialog(tool);
-      },
-      onLongPress: () => _showBorrowReturnDialog(tool),
+      trailing: IconButton(
+          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+          onPressed: () => _deleteTool(tool),
+          tooltip: 'Delete Tool'),
+      onTap: () => _showEditToolDetailsDialog(tool),
     );
   }
 

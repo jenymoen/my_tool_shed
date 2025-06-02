@@ -16,7 +16,7 @@ import 'package:my_tool_shed/services/auth_service.dart'; // Added for logout
 import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation after logout
 import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
 import 'package:my_tool_shed/pages/settings_page.dart';
-import 'package:my_tool_shed/widgets/language_selector.dart';
+// import 'package:my_tool_shed/widgets/language_selector.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -39,18 +39,6 @@ class DashboardPageState extends State<DashboardPage> {
   // final dbHelper = DatabaseHelper.instance; // Replaced
   final FirestoreService _firestoreService = FirestoreService(); // Added
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  final List<String> _brandOptions = [
-    'Bosch',
-    'Makita',
-    'DeWalt',
-    'Milwaukee',
-    'Ryobi',
-    'Stanley',
-    'Craftsman',
-    'Other'
-  ];
-  // String? _selectedBrand; // Not used directly for adding on dashboard, but keep if dialogs are shared
 
   List<Tool> _filterBorrowedTools(List<Tool> allTools) {
     return allTools.where((tool) => tool.isBorrowed).toList();
@@ -651,13 +639,14 @@ class DashboardPageState extends State<DashboardPage> {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     SnackBar(
                         content: Text(
-                            'Tool \"${toolToUpdate.name}\" ${isBorrowing ? "borrowed" : "returned"} successfully.')),
+                            'Tool "${toolToUpdate.name}" ${isBorrowing ? "borrowed" : "returned"} successfully.')),
                   );
                 }
-              } catch (e) {
+              } catch (_) {
                 if (dialogContext.mounted) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(content: Text('Action failed: $e')),
+                    const SnackBar(
+                        content: Text('Action failed. Please try again.')),
                   );
                 }
               }
@@ -749,18 +738,6 @@ class DashboardPageState extends State<DashboardPage> {
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(selectedStartDate == null
-                              ? 'Select start date'
-                              : 'Start date: ${DateFormat.yMd().format(selectedStartDate!)}'),
-                          IconButton(
-                            icon: const Icon(Icons.calendar_today),
-                            onPressed: () => handleDatePicker(true),
-                          )
-                        ],
-                      ),
                     ] else ...[
                       // Displaying info for returning
                       Text('Borrowed by: ${tool.borrowedBy ?? 'N/A'}'),

@@ -15,7 +15,7 @@ class AuthService {
     try {
       return await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
-    } on FirebaseAuthException catch (e) {
+    } catch (_) {
       // Handle errors (e.g., email already in use, weak password)
       return null;
     }
@@ -27,7 +27,7 @@ class AuthService {
     try {
       return await _auth.signInWithEmailAndPassword(
           email: email, password: password);
-    } on FirebaseAuthException catch (e) {
+    } catch (_) {
       // Handle errors (e.g., user not found, wrong password)
       return null;
     }
