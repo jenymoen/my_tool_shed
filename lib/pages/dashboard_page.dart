@@ -269,10 +269,11 @@ class DashboardPageState extends State<DashboardPage> {
             leading: const Icon(Icons.logout),
             title: Text(l10n.logout),
             onTap: () async {
+              final navigator = Navigator.of(context);
               Navigator.pop(context);
               await AuthService().signOut();
               if (mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
+                navigator.pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const LoginPage()),
                   (Route<dynamic> route) => false,
                 );
@@ -440,8 +441,6 @@ class DashboardPageState extends State<DashboardPage> {
   }
 
   void _showSelectToolToBorrowDialog(BuildContext pageContext) async {
-    // pageContext to avoid conflict
-    // Use FirestoreService to get available tools
     final allTools = await _firestoreService.getToolsStream().first;
     final availableTools = allTools.where((t) => !t.isBorrowed).toList();
 
@@ -475,10 +474,8 @@ class DashboardPageState extends State<DashboardPage> {
                           width: 40, height: 40, fit: BoxFit.cover)
                       : const Icon(Icons.construction),
                   onTap: () {
-                    Navigator.of(dialogContext).pop(); // Close this dialog
-                    _showBorrowReturnDialog(tool,
-                        isBorrowing:
-                            true); // Open borrow dialog for selected tool
+                    Navigator.of(dialogContext).pop();
+                    _showBorrowReturnDialog(tool, isBorrowing: true);
                   },
                 );
               },
@@ -497,8 +494,6 @@ class DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Updated _showBorrowReturnDialog to handle both borrowing and returning
-  // Needs to be fully refactored for Firestore
   void _showBorrowReturnDialog(Tool tool, {required bool isBorrowing}) {
     final borrowerNameController =
         TextEditingController(text: isBorrowing ? '' : tool.borrowedBy ?? '');
@@ -506,15 +501,13 @@ class DashboardPageState extends State<DashboardPage> {
         text: isBorrowing ? '' : tool.borrowerPhone ?? '');
     final borrowerEmailController = TextEditingController(
         text: isBorrowing ? '' : tool.borrowerEmail ?? '');
-    // For returns, notes could be existing tool.notes or new return notes.
-    // For borrows, notes are new.
     final notesController =
         TextEditingController(text: isBorrowing ? '' : tool.notes ?? '');
     DateTime? selectedReturnDate = isBorrowing ? null : tool.returnDate;
     DateTime? selectedStartDate = isBorrowing ? DateTime.now() : null;
 
     showDialog(
-      context: context, // Assuming this.context is the Page's context
+      context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
@@ -527,7 +520,7 @@ class DashboardPageState extends State<DashboardPage> {
                 firstDate: isStartDate ? DateTime(2000) : DateTime.now(),
                 lastDate: DateTime(2101),
               );
-              if (picked != null) {
+              if (picked != null && dialogContext.mounted) {
                 setDialogState(() {
                   if (isStartDate) {
                     selectedStartDate = picked;
@@ -557,7 +550,6 @@ class DashboardPageState extends State<DashboardPage> {
 
               try {
                 Tool toolToUpdate = Tool(
-                    // Create a mutable copy or fetch fresh if necessary
                     id: tool.id,
                     name: tool.name,
                     imagePath: tool.imagePath,
@@ -568,14 +560,13 @@ class DashboardPageState extends State<DashboardPage> {
                     borrowHistory: List<BorrowHistory>.from(tool.borrowHistory),
                     borrowerPhone: tool.borrowerPhone,
                     borrowerEmail: tool.borrowerEmail,
-                    notes: tool.notes, // Keep existing notes unless overridden
+                    notes: tool.notes,
                     qrCode: tool.qrCode,
                     category: tool.category);
 
                 if (isBorrowing) {
-                  // Borrowing logic
                   final newHistoryEntry = BorrowHistory(
-                    id: '', // Firestore generates
+                    id: '',
                     borrowerId: _firestoreService.currentUser?.uid ??
                         'borrow_action_user',
                     borrowerName: borrowerName,
@@ -599,11 +590,9 @@ class DashboardPageState extends State<DashboardPage> {
                           ? null
                           : borrowerEmailController.text.trim();
                   toolToUpdate.returnDate = selectedReturnDate;
-                  // toolToUpdate.notes = notesController.text.trim(); // Overwrite tool notes with borrow notes
                   await NotificationService()
                       .scheduleReturnReminder(toolToUpdate);
                 } else {
-                  // Returning logic
                   List<BorrowHistory> historyList = await _firestoreService
                       .getBorrowHistoryStream(toolToUpdate.id)
                       .first;
@@ -625,15 +614,13 @@ class DashboardPageState extends State<DashboardPage> {
                       borrowDate: activeHistory.borrowDate,
                       dueDate: activeHistory.dueDate,
                       returnDate: DateTime.now(),
-                      notes:
-                          notesController.text.trim(), // These are return notes
+                      notes: notesController.text.trim(),
                     );
                     await _firestoreService.updateBorrowHistory(
                         toolToUpdate.id, updatedHistoryEntry);
                   } else {
-                    // Fallback if no active history found (should be rare for a borrowed tool)
                     final newHistoryEntry = BorrowHistory(
-                      id: '', // Firestore generates
+                      id: '',
                       borrowerId: _firestoreService.currentUser?.uid ??
                           'return_action_user',
                       borrowerName:
@@ -654,19 +641,19 @@ class DashboardPageState extends State<DashboardPage> {
                   toolToUpdate.borrowerPhone = null;
                   toolToUpdate.borrowerEmail = null;
                   toolToUpdate.returnDate = null;
-                  // toolToUpdate.notes = notesController.text.trim(); // Could update tool notes with return notes
                   await NotificationService()
                       .cancelToolNotifications(toolToUpdate);
                 }
 
                 await _firestoreService.updateTool(toolToUpdate);
-                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  // Use page's context
-                  SnackBar(
-                      content: Text(
-                          'Tool \"${toolToUpdate.name}\" ${isBorrowing ? "borrowed" : "returned"} successfully.')),
-                );
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            'Tool \"${toolToUpdate.name}\" ${isBorrowing ? "borrowed" : "returned"} successfully.')),
+                  );
+                }
               } catch (e) {
                 if (dialogContext.mounted) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -677,14 +664,12 @@ class DashboardPageState extends State<DashboardPage> {
             }
 
             void showBorrowHistoryDialogLocal() async {
-              // Renamed to avoid conflict
               List<BorrowHistory> historyToShow =
                   await _firestoreService.getBorrowHistoryStream(tool.id).first;
-              if (!dialogContext.mounted)
-                return; // Check before showing another dialog
+              if (!dialogContext.mounted) return;
+
               showDialog(
-                context:
-                    dialogContext, // Use the current dialog's context for nesting
+                context: dialogContext,
                 builder: (BuildContext historyDialogContext) {
                   return AlertDialog(
                     title: Text('${tool.name} - Borrow History'),

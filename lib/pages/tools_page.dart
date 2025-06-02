@@ -117,10 +117,11 @@ class _ToolsPageState extends State<ToolsPage> {
                   if (dialogContext.mounted) {
                     setDialogState(() => tempImagePath = newImageFile.path);
                   }
-                } catch (e) {
+                } catch (_) {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(content: Text('Error processing image: $e')));
+                        const SnackBar(
+                            content: Text('Error processing image')));
                   }
                 }
               }
@@ -141,10 +142,11 @@ class _ToolsPageState extends State<ToolsPage> {
                   if (dialogContext.mounted) {
                     setDialogState(() => tempImagePath = newImageFile.path);
                   }
-                } catch (e) {
+                } catch (_) {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                        SnackBar(content: Text('Error processing image: $e')));
+                        const SnackBar(
+                            content: Text('Error processing image')));
                   }
                 }
               }
@@ -161,12 +163,14 @@ class _ToolsPageState extends State<ToolsPage> {
                 );
                 try {
                   await _firestoreService.addTool(newTool);
-                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content:
-                            Text('\\"${newTool.name}\\" added successfully.')),
-                  );
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              '\\"${newTool.name}\\" added successfully.')),
+                    );
+                  }
                 } catch (e) {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -263,11 +267,11 @@ class _ToolsPageState extends State<ToolsPage> {
                   if (dialogContext.mounted) {
                     setDialogState(() => tempImagePath = newImageFile.path);
                   }
-                } catch (e) {
+                } catch (_) {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(content: Text('Error processing image: $e')),
-                    );
+                        const SnackBar(
+                            content: Text('Error processing image')));
                   }
                 }
               }
@@ -288,11 +292,11 @@ class _ToolsPageState extends State<ToolsPage> {
                   if (dialogContext.mounted) {
                     setDialogState(() => tempImagePath = newImageFile.path);
                   }
-                } catch (e) {
+                } catch (_) {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(content: Text('Error processing image: $e')),
-                    );
+                        const SnackBar(
+                            content: Text('Error processing image')));
                   }
                 }
               }
@@ -318,12 +322,14 @@ class _ToolsPageState extends State<ToolsPage> {
                 );
                 try {
                   await _firestoreService.updateTool(updatedTool);
-                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                        content: Text(
-                            '\\"${updatedTool.name}\\" updated successfully.')),
-                  );
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              '\\"${updatedTool.name}\\" updated successfully.')),
+                    );
+                  }
                 } catch (e) {
                   if (dialogContext.mounted) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -534,12 +540,14 @@ class _ToolsPageState extends State<ToolsPage> {
                 }
 
                 await _firestoreService.updateTool(toolToUpdate);
-                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text(
-                          'Tool "${toolToUpdate.name}" ${toolToUpdate.isBorrowed ? "borrowed" : "returned"}.')),
-                );
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop();
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(
+                        content: Text(
+                            'Tool "${toolToUpdate.name}" ${toolToUpdate.isBorrowed ? "borrowed" : "returned"}.')),
+                  );
+                }
               } catch (e) {
                 if (dialogContext.mounted) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(
@@ -551,6 +559,8 @@ class _ToolsPageState extends State<ToolsPage> {
             void showBorrowHistoryDialog() async {
               List<BorrowHistory> historyToShow =
                   await _firestoreService.getBorrowHistoryStream(tool.id).first;
+
+              if (!dialogContext.mounted) return;
 
               showDialog(
                 context: dialogContext,
@@ -701,13 +711,15 @@ class _ToolsPageState extends State<ToolsPage> {
             await _firestoreService.deleteAllBorrowHistoryForTool(tool.id);
             await _firestoreService.deleteTool(tool.id);
 
-            if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('"${tool.name}" deleted successfully.')));
+            if (dialogContext.mounted) {
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(
+                  content: Text('"${tool.name}" deleted successfully.')));
+            }
           } catch (e) {
             if (dialogContext.mounted) {
               Navigator.of(dialogContext).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
+              ScaffoldMessenger.of(dialogContext).showSnackBar(
                 SnackBar(content: Text('Failed to delete tool: $e')),
               );
             }
@@ -885,10 +897,10 @@ class _ToolsPageState extends State<ToolsPage> {
             leading: const Icon(Icons.logout),
             title: Text(l10n.logout),
             onTap: () async {
+              final navigator = Navigator.of(context);
               await AuthService().signOut();
               if (context.mounted) {
-                Navigator.pushReplacement(
-                  context,
+                navigator.pushReplacement(
                   MaterialPageRoute(
                     builder: (context) => const LoginPage(),
                   ),
