@@ -43,5 +43,7 @@
     "french": "Fransk",
     "norwegian": "Norsk",
     "settings": "Innstillinger",
-    "noToolsYet": "Ingen verktøy ennå. Legg til noen!"
+    "noToolsYet": "Ingen verktøy ennå. Legg til noen!",
+    "borrowed": "Utlånt",
+    "available": "Tilgjengelig"
 } 

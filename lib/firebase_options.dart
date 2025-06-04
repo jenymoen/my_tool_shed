@@ -16,6 +16,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 /// );
 /// ```
 class DefaultFirebaseOptions {
+  static String _getEnvVar(String key) {
+    try {
+      return dotenv.env[key] ?? '';
+    } catch (e) {
+      print(
+          'Warning: Environment variable $key not found. Using empty string.');
+      return '';
+    }
+  }
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;
@@ -42,48 +52,48 @@ class DefaultFirebaseOptions {
   }
 
   static FirebaseOptions get web => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_WEB'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_WEB'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-        measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID_WEB'] ?? '',
+        apiKey: _getEnvVar('FIREBASE_API_KEY_WEB'),
+        appId: _getEnvVar('FIREBASE_APP_ID_WEB'),
+        messagingSenderId: _getEnvVar('FIREBASE_MESSAGING_SENDER_ID'),
+        projectId: _getEnvVar('FIREBASE_PROJECT_ID'),
+        authDomain: _getEnvVar('FIREBASE_AUTH_DOMAIN'),
+        storageBucket: _getEnvVar('FIREBASE_STORAGE_BUCKET'),
+        measurementId: _getEnvVar('FIREBASE_MEASUREMENT_ID_WEB'),
       );
 
   static FirebaseOptions get android => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_ANDROID'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_ANDROID'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
+        apiKey: _getEnvVar('FIREBASE_API_KEY_ANDROID'),
+        appId: _getEnvVar('FIREBASE_APP_ID_ANDROID'),
+        messagingSenderId: _getEnvVar('FIREBASE_MESSAGING_SENDER_ID'),
+        projectId: _getEnvVar('FIREBASE_PROJECT_ID'),
+        storageBucket: _getEnvVar('FIREBASE_STORAGE_BUCKET'),
       );
 
   static FirebaseOptions get ios => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_IOS'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_IOS'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-        iosBundleId: dotenv.env['FIREBASE_IOS_BUNDLE_ID'] ?? '',
+        apiKey: _getEnvVar('FIREBASE_API_KEY_IOS'),
+        appId: _getEnvVar('FIREBASE_APP_ID_IOS'),
+        messagingSenderId: _getEnvVar('FIREBASE_MESSAGING_SENDER_ID'),
+        projectId: _getEnvVar('FIREBASE_PROJECT_ID'),
+        storageBucket: _getEnvVar('FIREBASE_STORAGE_BUCKET'),
+        iosBundleId: _getEnvVar('FIREBASE_IOS_BUNDLE_ID'),
       );
 
   static FirebaseOptions get macos => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_IOS'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_IOS'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-        iosBundleId: dotenv.env['FIREBASE_IOS_BUNDLE_ID'] ?? '',
+        apiKey: _getEnvVar('FIREBASE_API_KEY_IOS'),
+        appId: _getEnvVar('FIREBASE_APP_ID_IOS'),
+        messagingSenderId: _getEnvVar('FIREBASE_MESSAGING_SENDER_ID'),
+        projectId: _getEnvVar('FIREBASE_PROJECT_ID'),
+        storageBucket: _getEnvVar('FIREBASE_STORAGE_BUCKET'),
+        iosBundleId: _getEnvVar('FIREBASE_IOS_BUNDLE_ID'),
       );
 
   static FirebaseOptions get windows => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_WEB'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_WINDOWS'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-        measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID_WINDOWS'] ?? '',
+        apiKey: _getEnvVar('FIREBASE_API_KEY_WEB'),
+        appId: _getEnvVar('FIREBASE_APP_ID_WINDOWS'),
+        messagingSenderId: _getEnvVar('FIREBASE_MESSAGING_SENDER_ID'),
+        projectId: _getEnvVar('FIREBASE_PROJECT_ID'),
+        authDomain: _getEnvVar('FIREBASE_AUTH_DOMAIN'),
+        storageBucket: _getEnvVar('FIREBASE_STORAGE_BUCKET'),
+        measurementId: _getEnvVar('FIREBASE_MEASUREMENT_ID_WINDOWS'),
       );
 }
