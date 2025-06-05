@@ -6,17 +6,12 @@ import 'package:intl/intl.dart';
 import 'package:my_tool_shed/models/tool.dart';
 import 'package:my_tool_shed/services/firestore_service.dart';
 import 'package:my_tool_shed/services/notification_service.dart';
-// import 'package:my_tool_shed/pages/qr_scanner_page.dart';
-// import 'package:my_tool_shed/services/qr_service.dart';
-
-// import 'package:path/path.dart' as p;
-// import 'package:shared_preferences/shared_preferences.dart';
-import 'package:my_tool_shed/pages/tools_page.dart'; // For drawer navigation
-import 'package:my_tool_shed/services/auth_service.dart'; // Added for logout
-import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation after logout
-import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
+import 'package:my_tool_shed/pages/tools_page.dart';
+import 'package:my_tool_shed/services/auth_service.dart';
+import 'package:my_tool_shed/pages/login_page.dart';
+import 'package:my_tool_shed/pages/profile_page.dart';
 import 'package:my_tool_shed/pages/settings_page.dart';
-// import 'package:my_tool_shed/widgets/language_selector.dart';
+import 'package:my_tool_shed/pages/community/community_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -41,16 +36,17 @@ class DashboardPageState extends State<DashboardPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   List<Tool> _filterBorrowedTools(List<Tool> allTools) {
+    if (allTools.isEmpty) return [];
     return allTools.where((tool) => tool.isBorrowed).toList();
   }
 
   List<Tool> _getDueSoonTools(List<Tool> borrowedTools) {
+    if (borrowedTools.isEmpty) return [];
     final now = DateTime.now();
     return borrowedTools.where((tool) {
       if (tool.returnDate != null) {
         final daysUntilDue = tool.returnDate!.difference(now).inDays;
-        return daysUntilDue <= 7 &&
-            daysUntilDue >= 0; // Due within a week and not overdue
+        return daysUntilDue <= 7 && daysUntilDue >= 0;
       }
       return false;
     }).toList()
@@ -64,11 +60,12 @@ class DashboardPageState extends State<DashboardPage> {
   }
 
   List<Tool> _getOverdueTools(List<Tool> borrowedTools) {
+    if (borrowedTools.isEmpty) return [];
     final now = DateTime.now();
     return borrowedTools.where((tool) {
       if (tool.returnDate != null) {
         final daysUntilDue = tool.returnDate!.difference(now).inDays;
-        return daysUntilDue < 0; // Overdue
+        return daysUntilDue < 0;
       }
       return false;
     }).toList()
@@ -77,26 +74,28 @@ class DashboardPageState extends State<DashboardPage> {
             a.returnDate ?? DateTime.now().add(const Duration(days: 36500));
         final bDate =
             b.returnDate ?? DateTime.now().add(const Duration(days: 36500));
-        return aDate.compareTo(bDate); // Sooner overdue dates first
+        return aDate.compareTo(bDate);
       });
   }
 
   List<Tool> _getRegularBorrowedTools(List<Tool> borrowedTools) {
+    if (borrowedTools.isEmpty) return [];
     final dueSoonTools = _getDueSoonTools(borrowedTools);
     final overdueTools = _getOverdueTools(borrowedTools);
     return borrowedTools
         .where((tool) =>
             !dueSoonTools.contains(tool) && !overdueTools.contains(tool))
         .toList()
-      ..sort((a, b) {
-        // Optional: sort regular tools by name or other criteria
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
   (String, Color) _getToolStatus(Tool tool, BuildContext context) {
+    if (!tool.isBorrowed) {
+      return ('Available', Colors.green);
+    }
+
     final now = DateTime.now();
-    if (tool.isBorrowed && tool.returnDate != null) {
+    if (tool.returnDate != null) {
       final daysUntilDue = tool.returnDate!.difference(now).inDays;
       if (daysUntilDue < 0) {
         return ('Overdue by ${-daysUntilDue} days', Colors.red);
@@ -106,13 +105,10 @@ class DashboardPageState extends State<DashboardPage> {
         return (
           'Due in $daysUntilDue days',
           Theme.of(context).colorScheme.secondary
-        ); // Or a less prominent color
+        );
       }
     }
-    return (
-      'Borrowed',
-      Colors.green
-    ); // Should ideally not happen if date is always set
+    return ('Borrowed', Colors.green);
   }
 
   @override
@@ -221,6 +217,19 @@ class DashboardPageState extends State<DashboardPage> {
                   builder: (context) => ToolsPage(
                     onLocaleChanged: widget.onLocaleChanged,
                   ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.people),
+            title: Text(l10n.community),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CommunityPage(),
                 ),
               );
             },
@@ -387,99 +396,128 @@ class DashboardPageState extends State<DashboardPage> {
   Widget _buildToolTile(Tool tool) {
     final l10n = AppLocalizations.of(context)!;
     final (statusText, statusColor) = _getToolStatus(tool, context);
-    return ListTile(
-      leading: tool.imagePath != null && File(tool.imagePath!).existsSync()
-          ? SizedBox(
-              width: 50,
-              height: 50,
-              child: ClipRRect(
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: ListTile(
+        leading: tool.imagePath != null && File(tool.imagePath!).existsSync()
+            ? SizedBox(
+                width: 50,
+                height: 50,
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0),
-                  child: Image.file(File(tool.imagePath!),
-                      fit: BoxFit.cover,
-                      frameBuilder: (context, child, frame,
-                              wasSynchronouslyLoaded) =>
-                          frame == null
-                              ? const Center(child: CircularProgressIndicator())
-                              : child,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.construction, size: 40))))
-          : const Icon(Icons.construction, size: 40),
-      title: Text(tool.name),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(statusText,
-              style:
-                  TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
-          if (tool.brand != null && tool.brand!.isNotEmpty)
-            Text(l10n.brand(tool.brand!)),
-          Text(l10n.borrowedBy(tool.borrowedBy ?? 'N/A')),
-          if (tool.returnDate != null)
-            Text(l10n.returnBy(DateFormat.yMd().format(tool.returnDate!))),
-        ],
+                  child: Image.file(
+                    File(tool.imagePath!),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.construction, size: 40),
+                  ),
+                ),
+              )
+            : const Icon(Icons.construction, size: 40),
+        title: Text(
+          tool.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              statusText,
+              style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
+            ),
+            if (tool.brand != null && tool.brand!.isNotEmpty)
+              Text(l10n.brand(tool.brand!)),
+            Text(l10n.borrowedBy(tool.borrowedBy ?? 'N/A')),
+            if (tool.returnDate != null)
+              Text(l10n.returnBy(DateFormat.yMd().format(tool.returnDate!))),
+          ],
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.undo),
+          tooltip: l10n.returnTool,
+          onPressed: () => _showBorrowReturnDialog(tool, isBorrowing: false),
+        ),
+        onTap: () => _showBorrowReturnDialog(tool, isBorrowing: false),
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.undo), // Icon for returning a tool
-        tooltip: l10n.returnTool,
-        onPressed: () => _showBorrowReturnDialog(tool, isBorrowing: false),
-      ),
-      onTap: () =>
-          _showBorrowReturnDialog(tool, isBorrowing: false), // Tap to return
     );
   }
 
   void _showSelectToolToBorrowDialog(BuildContext pageContext) async {
-    final allTools = await _firestoreService.getToolsStream().first;
-    final availableTools = allTools.where((t) => !t.isBorrowed).toList();
+    try {
+      final allTools = await _firestoreService.getToolsStream().first;
+      final availableTools = allTools.where((t) => !t.isBorrowed).toList();
 
-    if (!pageContext.mounted) return;
+      if (!pageContext.mounted) return;
 
-    if (availableTools.isEmpty) {
-      ScaffoldMessenger.of(pageContext).showSnackBar(
-        const SnackBar(
-            content: Text('No tools are currently available to borrow.')),
-      );
-      return;
-    }
-
-    showDialog(
-      context: pageContext,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('Select Tool to Borrow'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: availableTools.length,
-              itemBuilder: (BuildContext context, int index) {
-                final tool = availableTools[index];
-                return ListTile(
-                  title: Text(tool.name),
-                  leading: tool.imagePath != null &&
-                          File(tool.imagePath!).existsSync()
-                      ? Image.file(File(tool.imagePath!),
-                          width: 40, height: 40, fit: BoxFit.cover)
-                      : const Icon(Icons.construction),
-                  onTap: () {
-                    Navigator.of(dialogContext).pop();
-                    _showBorrowReturnDialog(tool, isBorrowing: true);
-                  },
-                );
-              },
-            ),
+      if (availableTools.isEmpty) {
+        ScaffoldMessenger.of(pageContext).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(pageContext)!.noToolsAvailable),
+            backgroundColor: Colors.orange,
           ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-          ],
         );
-      },
-    );
+        return;
+      }
+
+      showDialog(
+        context: pageContext,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: Text(AppLocalizations.of(dialogContext)!.selectToolToBorrow),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: availableTools.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final tool = availableTools[index];
+                  return ListTile(
+                    title: Text(tool.name),
+                    subtitle: tool.brand != null && tool.brand!.isNotEmpty
+                        ? Text(tool.brand!)
+                        : null,
+                    leading: tool.imagePath != null &&
+                            File(tool.imagePath!).existsSync()
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(4.0),
+                            child: Image.file(
+                              File(tool.imagePath!),
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.construction),
+                            ),
+                          )
+                        : const Icon(Icons.construction),
+                    onTap: () {
+                      Navigator.of(dialogContext).pop();
+                      _showBorrowReturnDialog(tool, isBorrowing: true);
+                    },
+                  );
+                },
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text(AppLocalizations.of(dialogContext)!.cancel),
+                onPressed: () => Navigator.of(dialogContext).pop(),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (e) {
+      if (pageContext.mounted) {
+        ScaffoldMessenger.of(pageContext).showSnackBar(
+          SnackBar(
+            content: Text('Error loading tools: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showBorrowReturnDialog(Tool tool, {required bool isBorrowing}) {
@@ -550,7 +588,18 @@ class DashboardPageState extends State<DashboardPage> {
                     borrowerEmail: tool.borrowerEmail,
                     notes: tool.notes,
                     qrCode: tool.qrCode,
-                    category: tool.category);
+                    category: tool.category,
+                    ownerId: tool.ownerId,
+                    ownerName: tool.ownerName,
+                    isAvailableForCommunity: tool.isAvailableForCommunity,
+                    allowedBorrowers: List<String>.from(tool.allowedBorrowers),
+                    communityRating: tool.communityRating,
+                    totalCommunityRatings: tool.totalCommunityRatings,
+                    requiresApproval: tool.requiresApproval,
+                    location: tool.location,
+                    condition: tool.condition,
+                    lastMaintenanceDate: tool.lastMaintenanceDate,
+                    maintenanceNotes: tool.maintenanceNotes);
 
                 if (isBorrowing) {
                   final newHistoryEntry = BorrowHistory(
@@ -569,15 +618,15 @@ class DashboardPageState extends State<DashboardPage> {
                   await _firestoreService.addBorrowHistory(
                       toolToUpdate.id, newHistoryEntry);
 
-                  toolToUpdate.isBorrowed = true;
-                  toolToUpdate.borrowedBy = borrowerName;
-                  toolToUpdate.borrowerPhone =
-                      borrowerPhoneController.text.trim();
-                  toolToUpdate.borrowerEmail =
-                      borrowerEmailController.text.trim().isEmpty
-                          ? null
-                          : borrowerEmailController.text.trim();
-                  toolToUpdate.returnDate = selectedReturnDate;
+                  toolToUpdate = toolToUpdate.copyWith(
+                    isBorrowed: true,
+                    borrowedBy: borrowerName,
+                    borrowerPhone: borrowerPhoneController.text.trim(),
+                    borrowerEmail: borrowerEmailController.text.trim().isEmpty
+                        ? null
+                        : borrowerEmailController.text.trim(),
+                    returnDate: selectedReturnDate,
+                  );
                   await NotificationService()
                       .scheduleReturnReminder(toolToUpdate);
                 } else {
@@ -624,11 +673,13 @@ class DashboardPageState extends State<DashboardPage> {
                         toolToUpdate.id, newHistoryEntry);
                   }
 
-                  toolToUpdate.isBorrowed = false;
-                  toolToUpdate.borrowedBy = null;
-                  toolToUpdate.borrowerPhone = null;
-                  toolToUpdate.borrowerEmail = null;
-                  toolToUpdate.returnDate = null;
+                  toolToUpdate = toolToUpdate.copyWith(
+                    isBorrowed: false,
+                    borrowedBy: null,
+                    borrowerPhone: null,
+                    borrowerEmail: null,
+                    returnDate: null,
+                  );
                   await NotificationService()
                       .cancelToolNotifications(toolToUpdate);
                 }

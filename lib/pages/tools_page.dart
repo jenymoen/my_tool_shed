@@ -14,8 +14,11 @@ import 'package:my_tool_shed/services/auth_service.dart'; // Added for logout
 import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation after logout
 import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
 import 'package:my_tool_shed/pages/settings_page.dart'; // Added for SettingsPage navigation
+import 'package:my_tool_shed/pages/community/community_page.dart'; // Added for CommunityPage
+import 'package:my_tool_shed/pages/community/tool_details_page.dart'; // Added for ToolDetailsPage
 // import 'package:my_tool_shed/widgets/language_selector.dart'; // Added for LanguageSelector
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added for AppLocalizations
+import 'package:my_tool_shed/services/storage_service.dart';
 
 class ToolsPage extends StatefulWidget {
   final Function(Locale) onLocaleChanged;
@@ -156,14 +159,32 @@ class _ToolsPageState extends State<ToolsPage> {
             Future<void> handleAddTool() async {
               final String name = nameController.text.trim();
               if (name.isNotEmpty) {
+                String? imageUrl;
+                if (tempImagePath != null) {
+                  try {
+                    final storageService = StorageService();
+                    imageUrl = await storageService.uploadToolImage(
+                      File(tempImagePath!),
+                      DateTime.now().millisecondsSinceEpoch.toString(),
+                    );
+                  } catch (e) {
+                    if (dialogContext.mounted) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        SnackBar(content: Text('Failed to upload image: $e')),
+                      );
+                    }
+                    return;
+                  }
+                }
+
                 final newTool = Tool(
                   id: '',
                   name: name,
-                  imagePath: tempImagePath,
+                  imagePath: imageUrl,
                   brand: _selectedBrand,
-                  ownerId: _firestoreService.currentUser?.uid ?? 'system',
-                  ownerName:
-                      _firestoreService.currentUser?.displayName ?? 'System',
+                  ownerId: _firestoreService.currentUser?.uid ?? 'unknown',
+                  ownerName: _firestoreService.currentUser?.displayName ??
+                      'Unknown User',
                   isAvailableForCommunity: false,
                   allowedBorrowers: const [],
                   communityRating: 0.0,
@@ -217,17 +238,34 @@ class _ToolsPageState extends State<ToolsPage> {
                     ),
                     const SizedBox(height: 15),
                     if (tempImagePath != null)
-                      Image.file(File(tempImagePath!),
-                          height: 100,
-                          fit: BoxFit.cover,
-                          frameBuilder: (context, child, frame,
-                                  wasSynchronouslyLoaded) =>
-                              frame == null
-                                  ? const SizedBox(
-                                      height: 100,
-                                      child: Center(
-                                          child: CircularProgressIndicator()))
-                                  : child),
+                      Container(
+                        height: 100,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: tempImagePath!.startsWith('http') ||
+                                  tempImagePath!.startsWith('https') ||
+                                  tempImagePath!.startsWith('gs://')
+                              ? Image.network(
+                                  tempImagePath!.startsWith('gs://')
+                                      ? 'https://storage.googleapis.com/${tempImagePath!.substring(5)}'
+                                      : tempImagePath!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.construction, size: 40),
+                                )
+                              : Image.file(
+                                  File(tempImagePath!),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.construction, size: 40),
+                                ),
+                        ),
+                      ),
                     TextButton.icon(
                         icon: const Icon(Icons.image_search),
                         label: const Text('Select Image'),
@@ -315,10 +353,33 @@ class _ToolsPageState extends State<ToolsPage> {
             Future<void> handleUpdateToolDetails() async {
               final String name = nameController.text.trim();
               if (name.isNotEmpty) {
+                String? imageUrl = tool.imagePath;
+                if (tempImagePath != null && tempImagePath != tool.imagePath) {
+                  try {
+                    final storageService = StorageService();
+                    // Delete old image if it exists
+                    if (tool.imagePath != null) {
+                      await storageService.deleteToolImage(tool.imagePath!);
+                    }
+                    // Upload new image
+                    imageUrl = await storageService.uploadToolImage(
+                      File(tempImagePath!),
+                      DateTime.now().millisecondsSinceEpoch.toString(),
+                    );
+                  } catch (e) {
+                    if (dialogContext.mounted) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        SnackBar(content: Text('Failed to upload image: $e')),
+                      );
+                    }
+                    return;
+                  }
+                }
+
                 final updatedTool = Tool(
                   id: tool.id,
                   name: name,
-                  imagePath: tempImagePath,
+                  imagePath: imageUrl,
                   brand: currentSelectedBrand,
                   isBorrowed: tool.isBorrowed,
                   returnDate: tool.returnDate,
@@ -387,17 +448,34 @@ class _ToolsPageState extends State<ToolsPage> {
                     ),
                     const SizedBox(height: 15),
                     if (tempImagePath != null)
-                      Image.file(File(tempImagePath!),
-                          height: 100,
-                          fit: BoxFit.cover,
-                          frameBuilder: (context, child, frame,
-                                  wasSynchronouslyLoaded) =>
-                              frame == null
-                                  ? const SizedBox(
-                                      height: 100,
-                                      child: Center(
-                                          child: CircularProgressIndicator()))
-                                  : child),
+                      Container(
+                        height: 100,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: tempImagePath!.startsWith('http') ||
+                                  tempImagePath!.startsWith('https') ||
+                                  tempImagePath!.startsWith('gs://')
+                              ? Image.network(
+                                  tempImagePath!.startsWith('gs://')
+                                      ? 'https://storage.googleapis.com/${tempImagePath!.substring(5)}'
+                                      : tempImagePath!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.construction, size: 40),
+                                )
+                              : Image.file(
+                                  File(tempImagePath!),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.construction, size: 40),
+                                ),
+                        ),
+                      ),
                     TextButton.icon(
                         icon: const Icon(Icons.image_search),
                         label: const Text('Change Image'),
@@ -469,21 +547,22 @@ class _ToolsPageState extends State<ToolsPage> {
   Widget _buildToolTile(Tool tool) {
     final (statusText, statusColor) = _getToolStatus(tool, context);
     return ListTile(
-      leading: tool.imagePath != null && File(tool.imagePath!).existsSync()
+      leading: tool.imagePath != null
           ? SizedBox(
               width: 50,
               height: 50,
               child: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0),
-                  child: Image.file(File(tool.imagePath!),
-                      fit: BoxFit.cover,
-                      frameBuilder: (context, child, frame,
-                              wasSynchronouslyLoaded) =>
-                          frame == null
-                              ? const Center(child: CircularProgressIndicator())
-                              : child,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.construction, size: 40))))
+                  child: Image.network(
+                    tool.imagePath!,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.construction, size: 40),
+                  )))
           : const Icon(Icons.construction, size: 40),
       title: Text(tool.name),
       subtitle: Column(
@@ -502,11 +581,32 @@ class _ToolsPageState extends State<ToolsPage> {
                     TextStyle(color: Theme.of(context).colorScheme.secondary)),
         ],
       ),
-      trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-          onPressed: () => _deleteTool(tool),
-          tooltip: 'Delete Tool'),
-      onTap: () => _showEditToolDetailsDialog(tool),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => _showEditToolDetailsDialog(tool),
+            tooltip: 'Edit Tool',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+            onPressed: () => _deleteTool(tool),
+            tooltip: 'Delete Tool',
+          ),
+        ],
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ToolDetailsPage(
+              tool: tool,
+              currentUserId: _firestoreService.currentUser?.uid ?? '',
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -570,6 +670,19 @@ class _ToolsPageState extends State<ToolsPage> {
             title: Text(l10n.allTools),
             onTap: () {
               Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.people),
+            title: Text(l10n.community),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CommunityPage(),
+                ),
+              );
             },
           ),
           ListTile(

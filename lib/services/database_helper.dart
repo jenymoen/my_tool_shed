@@ -21,6 +21,8 @@ class DatabaseHelper {
   static const columnNotes = 'notes';
   static const columnQrCode = 'qrCode';
   static const columnCategory = 'category';
+  static const columnOwnerId = 'ownerId';
+  static const columnOwnerName = 'ownerName';
 
   // BorrowHistory specific columns
   static const columnHistoryToolId = 'tool_id'; // Foreign key to tools table
@@ -59,7 +61,9 @@ class DatabaseHelper {
         $columnBorrowerEmail TEXT,
         $columnNotes TEXT,
         $columnQrCode TEXT,
-        $columnCategory TEXT
+        $columnCategory TEXT,
+        $columnOwnerId TEXT NOT NULL,
+        $columnOwnerName TEXT NOT NULL
       )
       ''');
 
@@ -84,7 +88,13 @@ class DatabaseHelper {
     if (oldVersion < 2) {
       await db.execute("ALTER TABLE $tableTools ADD COLUMN $columnBrand TEXT");
     }
-    // Add more migrations here if oldVersion < 3, etc.
+    if (oldVersion < 3) {
+      await db.execute(
+          "ALTER TABLE $tableTools ADD COLUMN $columnOwnerId TEXT NOT NULL DEFAULT 'system'");
+      await db.execute(
+          "ALTER TABLE $tableTools ADD COLUMN $columnOwnerName TEXT NOT NULL DEFAULT 'System'");
+    }
+    // Add more migrations here if oldVersion < 4, etc.
   }
 
   // Helper methods for Tool
@@ -252,6 +262,8 @@ extension ToolDbExtension on Tool {
         DatabaseHelper.columnNotes: notes,
         DatabaseHelper.columnQrCode: qrCode,
         DatabaseHelper.columnCategory: category,
+        DatabaseHelper.columnOwnerId: ownerId,
+        DatabaseHelper.columnOwnerName: ownerName,
       };
 
   static Tool fromJsonDb(
@@ -261,6 +273,8 @@ extension ToolDbExtension on Tool {
         name: json[DatabaseHelper.columnName] as String,
         imagePath: json[DatabaseHelper.columnImagePath] as String?,
         brand: json[DatabaseHelper.columnBrand] as String?,
+        ownerId: json[DatabaseHelper.columnOwnerId] as String,
+        ownerName: json[DatabaseHelper.columnOwnerName] as String,
         isBorrowed: (json[DatabaseHelper.columnIsBorrowed] as int) == 1,
         returnDate: json[DatabaseHelper.columnReturnDate] == null
             ? null

@@ -34,14 +34,10 @@ class FirestoreService {
   }
 
   // Add a new tool
-  Future<void> addTool(Tool tool) async {
+  Future<String> addTool(Tool tool) async {
     // Firestore will auto-generate an ID if we use .add()
-    // If tool.id is already set (e.g. from a previous system or for specific needs),
-    // we could use .doc(tool.id).set(tool) instead.
-    // For simplicity, we'll let Firestore generate IDs for new tools.
     final docRef = await _userToolsCollection().add(tool);
-    // Optionally, update the tool object with the Firestore-generated ID
-    // tool.id = docRef.id; // This line is problematic if tool.id is final or if we don't pass it back
+    return docRef.id;
   }
 
   // Update an existing tool
