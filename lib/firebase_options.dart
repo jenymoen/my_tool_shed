@@ -3,7 +3,6 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -41,49 +40,49 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static FirebaseOptions get web => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_WEB'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_WEB'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-        measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID_WEB'] ?? '',
+  static FirebaseOptions get web => const FirebaseOptions(
+        apiKey: 'AIzaSyDD7D1WfiGdxrcprt45sj2uo_GSfceaZbU',
+        appId: '1:152149271375:android:afc4125c50607777c01b3a',
+        messagingSenderId: '152149271375',
+        projectId: 'my-tool-shed-8565f',
+        authDomain: 'my-tool-shed-8565f.firebaseapp.com',
+        storageBucket: 'my-tool-shed-8565f.firebasestorage.app',
+        measurementId: '',
       );
 
-  static FirebaseOptions get android => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_ANDROID'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_ANDROID'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
+  static FirebaseOptions get android => const FirebaseOptions(
+        apiKey: 'AIzaSyDD7D1WfiGdxrcprt45sj2uo_GSfceaZbU',
+        appId: '1:152149271375:android:afc4125c50607777c01b3a',
+        messagingSenderId: '152149271375',
+        projectId: 'my-tool-shed-8565f',
+        storageBucket: 'my-tool-shed-8565f.firebasestorage.app',
       );
 
-  static FirebaseOptions get ios => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_IOS'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_IOS'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-        iosBundleId: dotenv.env['FIREBASE_IOS_BUNDLE_ID'] ?? '',
+  static FirebaseOptions get ios => const FirebaseOptions(
+        apiKey: 'AIzaSyDD7D1WfiGdxrcprt45sj2uo_GSfceaZbU',
+        appId: '1:152149271375:android:afc4125c50607777c01b3a',
+        messagingSenderId: '152149271375',
+        projectId: 'my-tool-shed-8565f',
+        storageBucket: 'my-tool-shed-8565f.firebasestorage.app',
+        iosBundleId: 'com.lumin.myToolShed',
       );
 
-  static FirebaseOptions get macos => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_IOS'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_IOS'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-        iosBundleId: dotenv.env['FIREBASE_IOS_BUNDLE_ID'] ?? '',
+  static FirebaseOptions get macos => const FirebaseOptions(
+        apiKey: 'AIzaSyDD7D1WfiGdxrcprt45sj2uo_GSfceaZbU',
+        appId: '1:152149271375:android:afc4125c50607777c01b3a',
+        messagingSenderId: '152149271375',
+        projectId: 'my-tool-shed-8565f',
+        storageBucket: 'my-tool-shed-8565f.firebasestorage.app',
+        iosBundleId: 'com.lumin.myToolShed',
       );
 
-  static FirebaseOptions get windows => FirebaseOptions(
-        apiKey: dotenv.env['FIREBASE_API_KEY_WEB'] ?? '',
-        appId: dotenv.env['FIREBASE_APP_ID_WINDOWS'] ?? '',
-        messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-        projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
-        storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
-        measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID_WINDOWS'] ?? '',
+  static FirebaseOptions get windows => const FirebaseOptions(
+        apiKey: 'AIzaSyDD7D1WfiGdxrcprt45sj2uo_GSfceaZbU',
+        appId: '1:152149271375:android:afc4125c50607777c01b3a',
+        messagingSenderId: '152149271375',
+        projectId: 'my-tool-shed-8565f',
+        authDomain: 'my-tool-shed-8565f.firebaseapp.com',
+        storageBucket: 'my-tool-shed-8565f.firebasestorage.app',
+        measurementId: '',
       );
 }

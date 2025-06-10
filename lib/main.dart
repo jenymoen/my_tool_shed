@@ -5,18 +5,14 @@ import 'package:my_tool_shed/pages/login_page.dart';
 import 'package:my_tool_shed/services/auth_service.dart';
 import 'package:my_tool_shed/services/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // Assuming flutterfire configure generates this
+import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
 
   // Initialize the Mobile Ads SDK
   await MobileAds.instance.initialize();

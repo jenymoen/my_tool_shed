@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "152149271375",
+    "project_id": "my-tool-shed-8565f",
+    "storage_bucket": "my-tool-shed-8565f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:152149271375:android:afc4125c50607777c01b3a",
+        "android_client_info": {
+          "package_name": "com.lumin.my_tool_shed"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "152149271375-hoj2560imm70fgnpqvfl2nc3fbil5654.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lumin.my_tool_shed",
+            "certificate_hash": "31732c5fef3c91a6736149ca88ee2bd9772e2344"
+          }
+        },
+        {
+          "client_id": "152149271375-4s2dkpr88igfpif682o4pp29n6sjn2kn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDD7D1WfiGdxrcprt45sj2uo_GSfceaZbU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "152149271375-4s2dkpr88igfpif682o4pp29n6sjn2kn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "152149271375-96f2e7dsinmb00rsad1srs0j2090jt76.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.myToolShed"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
