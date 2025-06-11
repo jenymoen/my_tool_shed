@@ -26,14 +26,20 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => DashboardPageState();
 }
 
-class DashboardPageState extends State<DashboardPage> {
+class DashboardPageState extends State<DashboardPage>
+    with WidgetsBindingObserver {
   // final List<Tool> _borrowedTools = []; // Replaced by StreamBuilder
   // bool _isLoading = true; // Replaced by StreamBuilder states
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
-  // final dbHelper = DatabaseHelper.instance; // Replaced
+  bool _isAdInitialized = false;
   final FirestoreService _firestoreService = FirestoreService(); // Added
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Test ad unit ID for development
+  static const String _testAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
+  // Production ad unit ID
+  static const String _prodAdUnitId = 'ca-app-pub-5326232965412305~2242713432';
 
   List<Tool> _filterBorrowedTools(List<Tool> allTools) {
     if (allTools.isEmpty) return [];
@@ -114,33 +120,126 @@ class DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // _loadBorrowedTools(); // Replaced by StreamBuilder
-    _initBannerAd();
+    WidgetsBinding.instance.addObserver(this);
+    // Delay ad initialization to ensure widget is fully mounted
+    Future.delayed(Duration.zero, () {
+      if (mounted) {
+        _initializeAds();
+      }
+    });
   }
 
-  void _initBannerAd() {
-    _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-5326232965412305~2242713432',
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            _isAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-        },
-      ),
-    );
-    _bannerAd?.load();
+  Future<void> _initializeAds() async {
+    if (!mounted) return;
+
+    try {
+      final initializationStatus = await MobileAds.instance.initialize();
+      debugPrint('Initialization status: $initializationStatus');
+
+      if (mounted) {
+        setState(() {
+          _isAdInitialized = true;
+        });
+        _initBannerAd();
+      }
+    } catch (e) {
+      debugPrint('Error initializing MobileAds: $e');
+      if (mounted) {
+        setState(() {
+          _isAdInitialized = false;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
-    _bannerAd?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _disposeAd();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_isAdInitialized) {
+        _initBannerAd();
+      }
+    } else if (state == AppLifecycleState.paused) {
+      _disposeAd();
+    }
+  }
+
+  void _disposeAd() {
+    _bannerAd?.dispose();
+    _bannerAd = null;
+    if (mounted) {
+      setState(() {
+        _isAdLoaded = false;
+      });
+    }
+  }
+
+  void _initBannerAd() {
+    if (!mounted || !_isAdInitialized) return;
+
+    try {
+      _disposeAd(); // Clean up any existing ad
+
+      // Use test ad unit ID in debug mode
+      const bool isDebug = true; // Set this based on your build configuration
+      final String adUnitId = isDebug ? _testAdUnitId : _prodAdUnitId;
+
+      _bannerAd = BannerAd(
+        adUnitId: adUnitId,
+        size: AdSize.banner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            debugPrint('Ad loaded successfully');
+            if (!mounted) return;
+            setState(() {
+              _isAdLoaded = true;
+            });
+          },
+          onAdFailedToLoad: (ad, error) {
+            debugPrint('Ad failed to load: $error');
+            ad.dispose();
+            _disposeAd();
+          },
+          onAdOpened: (ad) => debugPrint('Ad opened'),
+          onAdClosed: (ad) => debugPrint('Ad closed'),
+          onAdImpression: (ad) => debugPrint('Ad impression'),
+          onAdClicked: (ad) => debugPrint('Ad clicked'),
+        ),
+      );
+
+      _bannerAd?.load();
+    } catch (e) {
+      debugPrint('Error initializing ad: $e');
+      _disposeAd();
+    }
+  }
+
+  Widget _buildAdWidget() {
+    if (!_isAdInitialized || !_isAdLoaded || _bannerAd == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(right: 20.0, bottom: 125.0),
+          child: Container(
+            alignment: Alignment.centerLeft,
+            height: _bannerAd?.size.height.toDouble(),
+            width: _bannerAd?.size.width.toDouble(),
+            child: AdWidget(ad: _bannerAd!),
+          ),
+        ),
+      ),
+    );
   }
 
   // Future<void> _loadBorrowedTools() async { // Removed
@@ -362,23 +461,10 @@ class DashboardPageState extends State<DashboardPage> {
             children: [
               Expanded(
                 child: ListView(
-                  // Changed from ListView.builder to simple ListView for sections
                   children: listItems,
                 ),
               ),
-              if (_isAdLoaded)
-                Container(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 20.0, bottom: 125.0),
-                    child: Container(
-                      alignment: Alignment.centerLeft,
-                      height: _bannerAd?.size.height.toDouble(),
-                      width: _bannerAd?.size.width.toDouble(),
-                      child: AdWidget(ad: _bannerAd!),
-                    ),
-                  ),
-                ),
+              _buildAdWidget(),
             ],
           );
         },
@@ -444,73 +530,90 @@ class DashboardPageState extends State<DashboardPage> {
   }
 
   void _showSelectToolToBorrowDialog(BuildContext pageContext) async {
+    if (!mounted) return;
+
     try {
       final allTools = await _firestoreService.getToolsStream().first;
       final availableTools = allTools.where((t) => !t.isBorrowed).toList();
 
-      if (!pageContext.mounted) return;
+      if (!mounted) return;
 
       if (availableTools.isEmpty) {
-        ScaffoldMessenger.of(pageContext).showSnackBar(
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(pageContext)!.noToolsAvailable),
+            content: Text(AppLocalizations.of(context)!.noToolsAvailable),
             backgroundColor: Colors.orange,
           ),
         );
         return;
       }
 
-      showDialog(
-        context: pageContext,
+      if (!mounted) return;
+
+      final selectedTool = await showDialog<Tool>(
+        context: context,
+        barrierDismissible: true,
         builder: (BuildContext dialogContext) {
-          return AlertDialog(
-            title: Text(AppLocalizations.of(dialogContext)!.selectToolToBorrow),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: availableTools.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final tool = availableTools[index];
-                  return ListTile(
-                    title: Text(tool.name),
-                    subtitle: tool.brand != null && tool.brand!.isNotEmpty
-                        ? Text(tool.brand!)
-                        : null,
-                    leading: tool.imagePath != null &&
-                            File(tool.imagePath!).existsSync()
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(4.0),
-                            child: Image.file(
-                              File(tool.imagePath!),
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(Icons.construction),
-                            ),
-                          )
-                        : const Icon(Icons.construction),
-                    onTap: () {
-                      Navigator.of(dialogContext).pop();
-                      _showBorrowReturnDialog(tool, isBorrowing: true);
-                    },
-                  );
-                },
+          return WillPopScope(
+            onWillPop: () async => true,
+            child: AlertDialog(
+              title:
+                  Text(AppLocalizations.of(dialogContext)!.selectToolToBorrow),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: MediaQuery.of(dialogContext).size.height * 0.6,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: availableTools.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final tool = availableTools[index];
+                    return ListTile(
+                      title: Text(tool.name),
+                      subtitle: tool.brand != null && tool.brand!.isNotEmpty
+                          ? Text(tool.brand!)
+                          : null,
+                      leading: tool.imagePath != null &&
+                              File(tool.imagePath!).existsSync()
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(4.0),
+                              child: Image.file(
+                                File(tool.imagePath!),
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.construction),
+                              ),
+                            )
+                          : const Icon(Icons.construction),
+                      onTap: () {
+                        Navigator.of(dialogContext).pop(tool);
+                      },
+                    );
+                  },
+                ),
               ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text(AppLocalizations.of(dialogContext)!.cancel),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                ),
+              ],
             ),
-            actions: <Widget>[
-              TextButton(
-                child: Text(AppLocalizations.of(dialogContext)!.cancel),
-                onPressed: () => Navigator.of(dialogContext).pop(),
-              ),
-            ],
           );
         },
       );
+
+      if (selectedTool != null && mounted) {
+        // Add a small delay to ensure the first dialog is fully closed
+        await Future.delayed(const Duration(milliseconds: 100));
+        if (!mounted) return;
+        _showBorrowReturnDialog(selectedTool, isBorrowing: true);
+      }
     } catch (e) {
-      if (pageContext.mounted) {
-        ScaffoldMessenger.of(pageContext).showSnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading tools: $e'),
             backgroundColor: Colors.red,
@@ -521,6 +624,8 @@ class DashboardPageState extends State<DashboardPage> {
   }
 
   void _showBorrowReturnDialog(Tool tool, {required bool isBorrowing}) {
+    if (!mounted) return;
+
     final borrowerNameController =
         TextEditingController(text: isBorrowing ? '' : tool.borrowedBy ?? '');
     final borrowerPhoneController = TextEditingController(
@@ -534,332 +639,340 @@ class DashboardPageState extends State<DashboardPage> {
 
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            Future<void> handleDatePicker(bool isStartDate) async {
-              final DateTime? picked = await showDatePicker(
-                context: dialogContext,
-                initialDate: isStartDate
-                    ? (selectedStartDate ?? DateTime.now())
-                    : (selectedReturnDate ?? DateTime.now()),
-                firstDate: isStartDate ? DateTime(2000) : DateTime.now(),
-                lastDate: DateTime(2101),
-              );
-              if (picked != null && dialogContext.mounted) {
-                setDialogState(() {
-                  if (isStartDate) {
-                    selectedStartDate = picked;
-                  } else {
-                    selectedReturnDate = picked;
-                  }
-                });
-              }
-            }
-
-            Future<void> handleAction() async {
-              final String borrowerName = borrowerNameController.text.trim();
-
-              if (isBorrowing &&
-                  (borrowerName.isEmpty ||
-                      selectedReturnDate == null ||
-                      selectedStartDate == null)) {
-                if (dialogContext.mounted) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(
-                        content: Text(
-                            'Please enter borrower name and select both start and return dates.')),
-                  );
-                }
-                return;
-              }
-
-              try {
-                Tool toolToUpdate = Tool(
-                    id: tool.id,
-                    name: tool.name,
-                    imagePath: tool.imagePath,
-                    brand: tool.brand,
-                    isBorrowed: tool.isBorrowed,
-                    returnDate: tool.returnDate,
-                    borrowedBy: tool.borrowedBy,
-                    borrowHistory: List<BorrowHistory>.from(tool.borrowHistory),
-                    borrowerPhone: tool.borrowerPhone,
-                    borrowerEmail: tool.borrowerEmail,
-                    notes: tool.notes,
-                    qrCode: tool.qrCode,
-                    category: tool.category,
-                    ownerId: tool.ownerId,
-                    ownerName: tool.ownerName,
-                    isAvailableForCommunity: tool.isAvailableForCommunity,
-                    allowedBorrowers: List<String>.from(tool.allowedBorrowers),
-                    communityRating: tool.communityRating,
-                    totalCommunityRatings: tool.totalCommunityRatings,
-                    requiresApproval: tool.requiresApproval,
-                    location: tool.location,
-                    condition: tool.condition,
-                    lastMaintenanceDate: tool.lastMaintenanceDate,
-                    maintenanceNotes: tool.maintenanceNotes);
-
-                if (isBorrowing) {
-                  final newHistoryEntry = BorrowHistory(
-                    id: '',
-                    borrowerId: _firestoreService.currentUser?.uid ??
-                        'borrow_action_user',
-                    borrowerName: borrowerName,
-                    borrowerPhone: borrowerPhoneController.text.trim(),
-                    borrowerEmail: borrowerEmailController.text.trim().isEmpty
-                        ? null
-                        : borrowerEmailController.text.trim(),
-                    borrowDate: selectedStartDate!,
-                    dueDate: selectedReturnDate!,
-                    notes: notesController.text.trim(),
-                  );
-                  await _firestoreService.addBorrowHistory(
-                      toolToUpdate.id, newHistoryEntry);
-
-                  toolToUpdate = toolToUpdate.copyWith(
-                    isBorrowed: true,
-                    borrowedBy: borrowerName,
-                    borrowerPhone: borrowerPhoneController.text.trim(),
-                    borrowerEmail: borrowerEmailController.text.trim().isEmpty
-                        ? null
-                        : borrowerEmailController.text.trim(),
-                    returnDate: selectedReturnDate,
-                  );
-                  await NotificationService()
-                      .scheduleReturnReminder(toolToUpdate);
-                } else {
-                  List<BorrowHistory> historyList = await _firestoreService
-                      .getBorrowHistoryStream(toolToUpdate.id)
-                      .first;
-                  BorrowHistory? activeHistory;
-                  for (var h in historyList) {
-                    if (h.returnDate == null) {
-                      activeHistory = h;
-                      break;
+        return WillPopScope(
+          onWillPop: () async => true,
+          child: StatefulBuilder(
+            builder: (dialogContext, setDialogState) {
+              Future<void> handleDatePicker(bool isStartDate) async {
+                final DateTime? picked = await showDatePicker(
+                  context: dialogContext,
+                  initialDate: isStartDate
+                      ? (selectedStartDate ?? DateTime.now())
+                      : (selectedReturnDate ?? DateTime.now()),
+                  firstDate: isStartDate ? DateTime(2000) : DateTime.now(),
+                  lastDate: DateTime(2101),
+                );
+                if (picked != null && dialogContext.mounted) {
+                  setDialogState(() {
+                    if (isStartDate) {
+                      selectedStartDate = picked;
+                    } else {
+                      selectedReturnDate = picked;
                     }
-                  }
+                  });
+                }
+              }
 
-                  if (activeHistory != null) {
-                    final updatedHistoryEntry = BorrowHistory(
-                      id: activeHistory.id,
-                      borrowerId: activeHistory.borrowerId,
-                      borrowerName: activeHistory.borrowerName,
-                      borrowerPhone: activeHistory.borrowerPhone,
-                      borrowerEmail: activeHistory.borrowerEmail,
-                      borrowDate: activeHistory.borrowDate,
-                      dueDate: activeHistory.dueDate,
-                      returnDate: DateTime.now(),
-                      notes: notesController.text.trim(),
+              Future<void> handleAction() async {
+                final String borrowerName = borrowerNameController.text.trim();
+
+                if (isBorrowing &&
+                    (borrowerName.isEmpty ||
+                        selectedReturnDate == null ||
+                        selectedStartDate == null)) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(
+                          content: Text(
+                              'Please enter borrower name and select both start and return dates.')),
                     );
-                    await _firestoreService.updateBorrowHistory(
-                        toolToUpdate.id, updatedHistoryEntry);
-                  } else {
+                  }
+                  return;
+                }
+
+                try {
+                  Tool toolToUpdate = Tool(
+                      id: tool.id,
+                      name: tool.name,
+                      imagePath: tool.imagePath,
+                      brand: tool.brand,
+                      isBorrowed: tool.isBorrowed,
+                      returnDate: tool.returnDate,
+                      borrowedBy: tool.borrowedBy,
+                      borrowHistory:
+                          List<BorrowHistory>.from(tool.borrowHistory),
+                      borrowerPhone: tool.borrowerPhone,
+                      borrowerEmail: tool.borrowerEmail,
+                      notes: tool.notes,
+                      qrCode: tool.qrCode,
+                      category: tool.category,
+                      ownerId: tool.ownerId,
+                      ownerName: tool.ownerName,
+                      isAvailableForCommunity: tool.isAvailableForCommunity,
+                      allowedBorrowers:
+                          List<String>.from(tool.allowedBorrowers),
+                      communityRating: tool.communityRating,
+                      totalCommunityRatings: tool.totalCommunityRatings,
+                      requiresApproval: tool.requiresApproval,
+                      location: tool.location,
+                      condition: tool.condition,
+                      lastMaintenanceDate: tool.lastMaintenanceDate,
+                      maintenanceNotes: tool.maintenanceNotes);
+
+                  if (isBorrowing) {
                     final newHistoryEntry = BorrowHistory(
                       id: '',
                       borrowerId: _firestoreService.currentUser?.uid ??
-                          'return_action_user',
-                      borrowerName:
-                          toolToUpdate.borrowedBy ?? "Unknown on return",
-                      borrowDate: toolToUpdate.returnDate
-                              ?.subtract(const Duration(days: 1)) ??
-                          DateTime.now().subtract(const Duration(days: 1)),
-                      dueDate: toolToUpdate.returnDate ?? DateTime.now(),
-                      returnDate: DateTime.now(),
-                      notes: "Tool returned. ${notesController.text.trim()}",
+                          'borrow_action_user',
+                      borrowerName: borrowerName,
+                      borrowerPhone: borrowerPhoneController.text.trim(),
+                      borrowerEmail: borrowerEmailController.text.trim().isEmpty
+                          ? null
+                          : borrowerEmailController.text.trim(),
+                      borrowDate: selectedStartDate!,
+                      dueDate: selectedReturnDate!,
+                      notes: notesController.text.trim(),
                     );
                     await _firestoreService.addBorrowHistory(
                         toolToUpdate.id, newHistoryEntry);
+
+                    toolToUpdate = toolToUpdate.copyWith(
+                      isBorrowed: true,
+                      borrowedBy: borrowerName,
+                      borrowerPhone: borrowerPhoneController.text.trim(),
+                      borrowerEmail: borrowerEmailController.text.trim().isEmpty
+                          ? null
+                          : borrowerEmailController.text.trim(),
+                      returnDate: selectedReturnDate,
+                    );
+                    await NotificationService()
+                        .scheduleReturnReminder(toolToUpdate);
+                  } else {
+                    List<BorrowHistory> historyList = await _firestoreService
+                        .getBorrowHistoryStream(toolToUpdate.id)
+                        .first;
+                    BorrowHistory? activeHistory;
+                    for (var h in historyList) {
+                      if (h.returnDate == null) {
+                        activeHistory = h;
+                        break;
+                      }
+                    }
+
+                    if (activeHistory != null) {
+                      final updatedHistoryEntry = BorrowHistory(
+                        id: activeHistory.id,
+                        borrowerId: activeHistory.borrowerId,
+                        borrowerName: activeHistory.borrowerName,
+                        borrowerPhone: activeHistory.borrowerPhone,
+                        borrowerEmail: activeHistory.borrowerEmail,
+                        borrowDate: activeHistory.borrowDate,
+                        dueDate: activeHistory.dueDate,
+                        returnDate: DateTime.now(),
+                        notes: notesController.text.trim(),
+                      );
+                      await _firestoreService.updateBorrowHistory(
+                          toolToUpdate.id, updatedHistoryEntry);
+                    } else {
+                      final newHistoryEntry = BorrowHistory(
+                        id: '',
+                        borrowerId: _firestoreService.currentUser?.uid ??
+                            'return_action_user',
+                        borrowerName:
+                            toolToUpdate.borrowedBy ?? "Unknown on return",
+                        borrowDate: toolToUpdate.returnDate
+                                ?.subtract(const Duration(days: 1)) ??
+                            DateTime.now().subtract(const Duration(days: 1)),
+                        dueDate: toolToUpdate.returnDate ?? DateTime.now(),
+                        returnDate: DateTime.now(),
+                        notes: "Tool returned. ${notesController.text.trim()}",
+                      );
+                      await _firestoreService.addBorrowHistory(
+                          toolToUpdate.id, newHistoryEntry);
+                    }
+
+                    toolToUpdate = toolToUpdate.copyWith(
+                      isBorrowed: false,
+                      borrowedBy: null,
+                      borrowerPhone: null,
+                      borrowerEmail: null,
+                      returnDate: null,
+                    );
+                    await NotificationService()
+                        .cancelToolNotifications(toolToUpdate);
                   }
 
-                  toolToUpdate = toolToUpdate.copyWith(
-                    isBorrowed: false,
-                    borrowedBy: null,
-                    borrowerPhone: null,
-                    borrowerEmail: null,
-                    returnDate: null,
-                  );
-                  await NotificationService()
-                      .cancelToolNotifications(toolToUpdate);
-                }
-
-                await _firestoreService.updateTool(toolToUpdate);
-                if (dialogContext.mounted) {
-                  Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(
-                        content: Text(
-                            'Tool "${toolToUpdate.name}" ${isBorrowing ? "borrowed" : "returned"} successfully.')),
-                  );
-                }
-              } catch (_) {
-                if (dialogContext.mounted) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(
-                        content: Text('Action failed. Please try again.')),
-                  );
+                  await _firestoreService.updateTool(toolToUpdate);
+                  if (dialogContext.mounted) {
+                    Navigator.of(dialogContext).pop();
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              'Tool "${toolToUpdate.name}" ${isBorrowing ? "borrowed" : "returned"} successfully.')),
+                    );
+                  }
+                } catch (_) {
+                  if (dialogContext.mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      const SnackBar(
+                          content: Text('Action failed. Please try again.')),
+                    );
+                  }
                 }
               }
-            }
 
-            void showBorrowHistoryDialogLocal() async {
-              List<BorrowHistory> historyToShow =
-                  await _firestoreService.getBorrowHistoryStream(tool.id).first;
-              if (!dialogContext.mounted) return;
+              void showBorrowHistoryDialogLocal() async {
+                List<BorrowHistory> historyToShow = await _firestoreService
+                    .getBorrowHistoryStream(tool.id)
+                    .first;
+                if (!dialogContext.mounted) return;
 
-              showDialog(
-                context: dialogContext,
-                builder: (BuildContext historyDialogContext) {
-                  return AlertDialog(
-                    title: Text('${tool.name} - Borrow History'),
-                    content: SingleChildScrollView(
-                      child: historyToShow.isEmpty
-                          ? const Text('No borrow history for this tool.')
-                          : Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: historyToShow.map((history) {
-                                return Card(
-                                  child: ListTile(
-                                    title: Text(history.borrowerName),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                            'Borrowed: ${DateFormat.yMd().format(history.borrowDate)}'),
-                                        Text(
-                                            'Due: ${DateFormat.yMd().format(history.dueDate)}'),
-                                        if (history.returnDate != null)
+                showDialog(
+                  context: dialogContext,
+                  builder: (BuildContext historyDialogContext) {
+                    return AlertDialog(
+                      title: Text('${tool.name} - Borrow History'),
+                      content: SingleChildScrollView(
+                        child: historyToShow.isEmpty
+                            ? const Text('No borrow history for this tool.')
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: historyToShow.map((history) {
+                                  return Card(
+                                    child: ListTile(
+                                      title: Text(history.borrowerName),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
                                           Text(
-                                              'Returned: ${DateFormat.yMd().format(history.returnDate!)}'),
-                                        if (history.notes?.isNotEmpty ?? false)
-                                          Text('Notes: ${history.notes}'),
-                                      ],
+                                              'Borrowed: ${DateFormat.yMd().format(history.borrowDate)}'),
+                                          Text(
+                                              'Due: ${DateFormat.yMd().format(history.dueDate)}'),
+                                          if (history.returnDate != null)
+                                            Text(
+                                                'Returned: ${DateFormat.yMd().format(history.returnDate!)}'),
+                                          if (history.notes?.isNotEmpty ??
+                                              false)
+                                            Text('Notes: ${history.notes}'),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                    ),
-                    actions: [
-                      TextButton(
-                          child: const Text('Close'),
-                          onPressed: () =>
-                              Navigator.of(historyDialogContext).pop())
-                    ],
-                  );
-                },
-              );
-            }
+                                  );
+                                }).toList(),
+                              ),
+                      ),
+                      actions: [
+                        TextButton(
+                            child: const Text('Close'),
+                            onPressed: () =>
+                                Navigator.of(historyDialogContext).pop())
+                      ],
+                    );
+                  },
+                );
+              }
 
-            return AlertDialog(
-              title: Text(isBorrowing
-                  ? 'Borrow Tool: ${tool.name}'
-                  : 'Return Tool: ${tool.name}'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    if (tool.imagePath != null)
-                      Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Image.file(File(tool.imagePath!),
-                              height: 100, fit: BoxFit.cover)),
-                    if (isBorrowing) ...[
+              return AlertDialog(
+                title: Text(isBorrowing
+                    ? 'Borrow Tool: ${tool.name}'
+                    : 'Return Tool: ${tool.name}'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (tool.imagePath != null)
+                        Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Image.file(File(tool.imagePath!),
+                                height: 100, fit: BoxFit.cover)),
+                      if (isBorrowing) ...[
+                        TextField(
+                          controller: borrowerNameController,
+                          decoration: const InputDecoration(
+                              labelText: "Borrower Name",
+                              hintText: "Enter borrower's name"),
+                          autofocus: true,
+                        ),
+                        TextField(
+                          controller: borrowerPhoneController,
+                          decoration: const InputDecoration(
+                              labelText: "Phone Number",
+                              hintText: "Enter borrower's phone"),
+                          keyboardType: TextInputType.phone,
+                        ),
+                        TextField(
+                          controller: borrowerEmailController,
+                          decoration: const InputDecoration(
+                              labelText: "Email",
+                              hintText: "Enter borrower's email"),
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 10),
+                      ] else ...[
+                        // Displaying info for returning
+                        Text('Borrowed by: ${tool.borrowedBy ?? 'N/A'}'),
+                        if (tool.borrowerPhone != null)
+                          Text('Phone: ${tool.borrowerPhone}'),
+                        if (tool.borrowerEmail != null)
+                          Text('Email: ${tool.borrowerEmail}'),
+                        if (tool.returnDate != null)
+                          Text(
+                              'Original due date: ${DateFormat.yMd().format(tool.returnDate!)}'),
+                      ],
                       TextField(
-                        controller: borrowerNameController,
-                        decoration: const InputDecoration(
-                            labelText: "Borrower Name",
-                            hintText: "Enter borrower's name"),
-                        autofocus: true,
+                        controller: notesController,
+                        decoration: InputDecoration(
+                            labelText:
+                                isBorrowing ? "Borrow Notes" : "Return Notes",
+                            hintText: isBorrowing
+                                ? "Add any notes about borrowing"
+                                : "Add any notes about the return"),
+                        maxLines: 3,
                       ),
-                      TextField(
-                        controller: borrowerPhoneController,
-                        decoration: const InputDecoration(
-                            labelText: "Phone Number",
-                            hintText: "Enter borrower's phone"),
-                        keyboardType: TextInputType.phone,
-                      ),
-                      TextField(
-                        controller: borrowerEmailController,
-                        decoration: const InputDecoration(
-                            labelText: "Email",
-                            hintText: "Enter borrower's email"),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 10),
-                    ] else ...[
-                      // Displaying info for returning
-                      Text('Borrowed by: ${tool.borrowedBy ?? 'N/A'}'),
-                      if (tool.borrowerPhone != null)
-                        Text('Phone: ${tool.borrowerPhone}'),
-                      if (tool.borrowerEmail != null)
-                        Text('Email: ${tool.borrowerEmail}'),
-                      if (tool.returnDate != null)
-                        Text(
-                            'Original due date: ${DateFormat.yMd().format(tool.returnDate!)}'),
-                    ],
-                    TextField(
-                      controller: notesController,
-                      decoration: InputDecoration(
-                          labelText:
-                              isBorrowing ? "Borrow Notes" : "Return Notes",
-                          hintText: isBorrowing
-                              ? "Add any notes about borrowing"
-                              : "Add any notes about the return"),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 16),
-                    if (isBorrowing) ...[
+                      const SizedBox(height: 16),
+                      if (isBorrowing) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(selectedStartDate == null
+                                ? 'Select start date'
+                                : 'Start date: ${DateFormat.yMd().format(selectedStartDate!)}'),
+                            IconButton(
+                              icon: const Icon(Icons.calendar_today),
+                              onPressed: () => handleDatePicker(true),
+                            )
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(selectedStartDate == null
-                              ? 'Select start date'
-                              : 'Start date: ${DateFormat.yMd().format(selectedStartDate!)}'),
+                          Text(selectedReturnDate == null
+                              ? 'Select return date'
+                              : 'Return by: ${DateFormat.yMd().format(selectedReturnDate!)}'),
                           IconButton(
                             icon: const Icon(Icons.calendar_today),
-                            onPressed: () => handleDatePicker(true),
+                            onPressed: () => handleDatePicker(false),
                           )
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
+                      TextButton.icon(
+                        icon: const Icon(Icons.history),
+                        label: const Text('View Borrow History'),
+                        onPressed: showBorrowHistoryDialogLocal,
+                      ),
                     ],
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(selectedReturnDate == null
-                            ? 'Select return date'
-                            : 'Return by: ${DateFormat.yMd().format(selectedReturnDate!)}'),
-                        IconButton(
-                          icon: const Icon(Icons.calendar_today),
-                          onPressed: () => handleDatePicker(false),
-                        )
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton.icon(
-                      icon: const Icon(Icons.history),
-                      label: const Text('View Borrow History'),
-                      onPressed: showBorrowHistoryDialogLocal,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                ),
-                TextButton(
-                  onPressed: handleAction,
-                  child: Text(
-                      isBorrowing ? 'Mark as Borrowed' : 'Mark as Returned'),
-                ),
-              ],
-            );
-          },
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                  ),
+                  TextButton(
+                    onPressed: handleAction,
+                    child: Text(
+                        isBorrowing ? 'Mark as Borrowed' : 'Mark as Returned'),
+                  ),
+                ],
+              );
+            },
+          ),
         );
       },
     );
