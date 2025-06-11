@@ -356,4 +356,28 @@ class BorrowHistory {
       notes: data?['notes'] as String?,
     );
   }
+
+  BorrowHistory copyWith({
+    String? id,
+    String? borrowerId,
+    String? borrowerName,
+    String? borrowerPhone,
+    String? borrowerEmail,
+    DateTime? borrowDate,
+    DateTime? dueDate,
+    DateTime? returnDate,
+    String? notes,
+  }) {
+    return BorrowHistory(
+      id: id ?? this.id,
+      borrowerId: borrowerId ?? this.borrowerId,
+      borrowerName: borrowerName ?? this.borrowerName,
+      borrowerPhone: borrowerPhone ?? this.borrowerPhone,
+      borrowerEmail: borrowerEmail ?? this.borrowerEmail,
+      borrowDate: borrowDate ?? this.borrowDate,
+      dueDate: dueDate ?? this.dueDate,
+      returnDate: returnDate ?? this.returnDate,
+      notes: notes ?? this.notes,
+    );
+  }
 }
