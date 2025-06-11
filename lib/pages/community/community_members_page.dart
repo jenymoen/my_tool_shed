@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_tool_shed/models/community_member.dart';
 import 'package:my_tool_shed/services/community_service.dart';
 import 'package:my_tool_shed/widgets/community/member_card.dart';
@@ -9,6 +10,7 @@ class CommunityMembersPage extends StatelessWidget {
   const CommunityMembersPage({super.key});
 
   void _showAddTrustedMemberDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final nameController = TextEditingController();
     final emailController = TextEditingController();
     final phoneController = TextEditingController();
@@ -21,16 +23,16 @@ class CommunityMembersPage extends StatelessWidget {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Add Trusted Member'),
+          title: Text(l10n.addTrustedMember),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    hintText: 'Enter member name',
+                  decoration: InputDecoration(
+                    labelText: l10n.name,
+                    hintText: l10n.name,
                   ),
                   autofocus: true,
                 ),
@@ -76,7 +78,7 @@ class CommunityMembersPage extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             TextButton(
               onPressed: () async {
@@ -128,7 +130,7 @@ class CommunityMembersPage extends StatelessWidget {
                   }
                 }
               },
-              child: const Text('Add Member'),
+              child: Text(l10n.addMember),
             ),
           ],
         );
@@ -138,6 +140,7 @@ class CommunityMembersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final communityService = CommunityService();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
@@ -152,7 +155,7 @@ class CommunityMembersPage extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
-              child: Text('Error: ${snapshot.error}'),
+              child: Text(l10n.errorLoadingMembers(snapshot.error.toString())),
             );
           }
 
@@ -176,12 +179,12 @@ class CommunityMembersPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No community members yet',
+                    l10n.noMembersFound,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Add trusted members to start building your community',
+                    l10n.addTrustedMembersToStartBuildingYourCommunity,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
