@@ -37,4 +37,14 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
   }
+
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      // Rethrow the error to be handled by the UI
+      rethrow;
+    }
+  }
 }

@@ -84,6 +84,99 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _showForgotPasswordDialog() async {
+    final resetEmailController = TextEditingController();
+    bool isResetting = false;
+    String? resetError;
+
+    await showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Reset Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter your email address and we\'ll send you a link to reset your password.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: resetEmailController,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.email),
+                ),
+                keyboardType: TextInputType.emailAddress,
+                enabled: !isResetting,
+              ),
+              if (resetError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    resetError!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isResetting ? null : () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: isResetting
+                  ? null
+                  : () async {
+                      final email = resetEmailController.text.trim();
+                      if (email.isEmpty || !email.contains('@')) {
+                        setState(() {
+                          resetError = 'Please enter a valid email address';
+                        });
+                        return;
+                      }
+
+                      setState(() {
+                        isResetting = true;
+                        resetError = null;
+                      });
+
+                      try {
+                        await _authService.sendPasswordResetEmail(email);
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Password reset email sent. Please check your inbox.',
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        setState(() {
+                          resetError = e.toString();
+                          isResetting = false;
+                        });
+                      }
+                    },
+              child: isResetting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Send Reset Link'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -137,6 +230,13 @@ class _LoginPageState extends State<LoginPage> {
                     }
                     return null;
                   },
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _showForgotPasswordDialog,
+                    child: const Text('Forgot Password?'),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 if (_errorMessage != null)

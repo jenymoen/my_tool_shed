@@ -13,6 +13,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 // import 'dart:io';
 //import 'package:path/path.dart' as path;
 import 'package:logging/logging.dart';
@@ -131,6 +132,22 @@ void main() async {
         options: options,
       );
       _logger.info('Firebase initialized successfully');
+
+      // Initialize Firebase App Check
+      _logger.info('Initializing Firebase App Check...');
+      try {
+        // Temporarily comment out App Check initialization
+        // await FirebaseAppCheck.instance.activate(
+        //   androidProvider: AndroidProvider.debug,
+        //   appleProvider: AppleProvider.debug,
+        // );
+        _logger.info('Firebase App Check initialization temporarily disabled');
+      } catch (e, stackTrace) {
+        _logger.severe(
+            'Failed to initialize Firebase App Check', e, stackTrace);
+        // Continue without App Check for now
+        _logger.info('Continuing without App Check...');
+      }
 
       // Verify Firebase services
       _logger.info('Verifying Firebase services...');
