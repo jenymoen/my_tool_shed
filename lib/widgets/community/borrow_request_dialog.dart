@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_tool_shed/models/tool.dart';
+import 'package:my_tool_shed/utils/date_formatter.dart';
 
 class BorrowRequestDialog extends StatefulWidget {
   final Tool tool;
@@ -78,7 +79,7 @@ class _BorrowRequestDialogState extends State<BorrowRequestDialog> {
                         child: Text(
                           _startDate == null
                               ? 'Select Date'
-                              : _startDate.toString().split(' ')[0],
+                              : DateFormatter.format(_startDate!),
                         ),
                       ),
                     ],
@@ -101,7 +102,7 @@ class _BorrowRequestDialogState extends State<BorrowRequestDialog> {
                         child: Text(
                           _endDate == null
                               ? 'Select Date'
-                              : _endDate.toString().split(' ')[0],
+                              : DateFormatter.format(_endDate!),
                         ),
                       ),
                     ],

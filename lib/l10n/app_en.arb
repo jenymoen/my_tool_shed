@@ -161,5 +161,15 @@
     "toolPurchasePhotos": "Tool Purchase Photos",
     "toolPurchaseDocuments": "Tool Purchase Documents",
     "toolPurchaseLinks": "Tool Purchase Links",
-    "toolPurchaseTags": "Tool Purchase Tags"
+    "toolPurchaseTags": "Tool Purchase Tags",
+    "dateFormat": "dd/MM/yyyy",
+    "dateFormatDescription": "Date format used throughout the app",
+    "login": "Login",
+    "signUp": "Sign Up",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "sendResetLink": "Send Reset Link",
+    "passwordResetEmailSent": "Password reset email sent. Please check your inbox.",
+    "signInWithGoogle": "Sign in with Google"
 } 

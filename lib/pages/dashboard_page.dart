@@ -15,6 +15,7 @@ import 'package:my_tool_shed/pages/profile_page.dart';
 import 'package:my_tool_shed/pages/settings_page.dart';
 import 'package:my_tool_shed/pages/community/community_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:my_tool_shed/utils/date_formatter.dart';
 
 class DashboardPage extends StatefulWidget {
   final Function(Locale) onLocaleChanged;
@@ -518,7 +519,7 @@ class DashboardPageState extends State<DashboardPage>
               Text(l10n.brand(tool.brand!)),
             Text(l10n.borrowedBy(tool.borrowedBy ?? 'N/A')),
             if (tool.returnDate != null)
-              Text(l10n.returnBy(DateFormat.yMd().format(tool.returnDate!))),
+              Text(l10n.returnBy(DateFormatter.format(tool.returnDate!))),
           ],
         ),
         trailing: IconButton(
@@ -689,12 +690,12 @@ class DashboardPageState extends State<DashboardPage>
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                            'Borrowed: ${DateFormat.yMd().format(history.borrowDate)}'),
+                                            'Borrowed: ${DateFormatter.format(history.borrowDate)}'),
                                         Text(
-                                            'Due: ${DateFormat.yMd().format(history.dueDate)}'),
+                                            'Due: ${DateFormatter.format(history.dueDate)}'),
                                         if (history.returnDate != null)
                                           Text(
-                                              'Returned: ${DateFormat.yMd().format(history.returnDate!)}'),
+                                              'Returned: ${DateFormatter.format(history.returnDate!)}'),
                                         if (history.notes?.isNotEmpty ?? false)
                                           Text('Notes: ${history.notes}'),
                                       ],
@@ -869,7 +870,7 @@ class DashboardPageState extends State<DashboardPage>
                           Text('Email: ${tool.borrowerEmail}'),
                         if (tool.returnDate != null)
                           Text(
-                              'Original due date: ${DateFormat.yMd().format(tool.returnDate!)}'),
+                              'Original due date: ${DateFormatter.format(tool.returnDate!)}'),
                       ],
                       TextField(
                         controller: notesController,
@@ -888,7 +889,7 @@ class DashboardPageState extends State<DashboardPage>
                           children: [
                             Text(selectedStartDate == null
                                 ? 'Select start date'
-                                : 'Start date: ${DateFormat.yMd().format(selectedStartDate!)}'),
+                                : 'Start date: ${DateFormatter.format(selectedStartDate!)}'),
                             IconButton(
                               icon: const Icon(Icons.calendar_today),
                               onPressed: () => handleDatePicker(true),
@@ -902,7 +903,7 @@ class DashboardPageState extends State<DashboardPage>
                         children: [
                           Text(selectedReturnDate == null
                               ? 'Select return date'
-                              : 'Return by: ${DateFormat.yMd().format(selectedReturnDate!)}'),
+                              : 'Return by: ${DateFormatter.format(selectedReturnDate!)}'),
                           IconButton(
                             icon: const Icon(Icons.calendar_today),
                             onPressed: () => handleDatePicker(false),

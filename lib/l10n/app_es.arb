@@ -160,5 +160,15 @@
     "toolPurchasePhotos": "Fotos de Compra",
     "toolPurchaseDocuments": "Documentos de Compra",
     "toolPurchaseLinks": "Enlaces de Compra",
-    "toolPurchaseTags": "Etiquetas de Compra"
+    "toolPurchaseTags": "Etiquetas de Compra",
+    "dateFormat": "dd/MM/yyyy",
+    "dateFormatDescription": "Formato de fecha utilizado en toda la aplicación",
+    "login": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "resetPassword": "Restablecer contraseña",
+    "sendResetLink": "Enviar enlace de restablecimiento",
+    "passwordResetEmailSent": "Se ha enviado un correo para restablecer la contraseña. Por favor, revisa tu bandeja de entrada.",
+    "signInWithGoogle": "Iniciar sesión con Google"
 } 

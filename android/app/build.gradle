@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'dev.flutter.flutter-gradle-plugin'
+    id 'com.google.gms.google-services'
 }
 
 def localProperties = new Properties()
@@ -28,7 +29,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.my_tool_shed"
+    namespace "com.lumin.my_tool_shed"
     compileSdkVersion 36
     ndkVersion flutter.ndkVersion
 
@@ -46,7 +47,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.my_tool_shed"
+        applicationId "com.lumin.my_tool_shed"
         minSdkVersion 23
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
