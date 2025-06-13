@@ -4,9 +4,33 @@ import 'package:my_tool_shed/pages/community/community_members_page.dart';
 import 'package:my_tool_shed/pages/community/community_tools_page.dart';
 import 'package:my_tool_shed/pages/community/trust_network_page.dart';
 import 'package:my_tool_shed/pages/community/tool_recommendations_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class CommunityPage extends StatelessWidget {
+class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
+
+  @override
+  State<CommunityPage> createState() => _CommunityPageState();
+}
+
+class _CommunityPageState extends State<CommunityPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late String _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    print('Debug - CommunityPage - Current User ID: $_currentUserId');
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +42,10 @@ class CommunityPage extends StatelessWidget {
         appBar: AppBar(
           title: Text(l10n.communityTitle),
           bottom: TabBar(
-            labelColor: Theme.of(context).colorScheme.primary,
+            controller: _tabController,
+            labelColor: Colors.white,
             unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
-            indicatorColor: Theme.of(context).colorScheme.primary,
+            indicatorColor: Colors.white,
             tabs: [
               Tab(text: l10n.members),
               Tab(text: l10n.tools),
@@ -29,12 +54,15 @@ class CommunityPage extends StatelessWidget {
             ],
           ),
         ),
-        body: const TabBarView(
+        body: TabBarView(
+          controller: _tabController,
           children: [
-            CommunityMembersPage(),
-            CommunityToolsPage(),
-            TrustNetworkPage(),
-            ToolRecommendationsPage(),
+            CommunityMembersPage(
+              currentUserId: _currentUserId,
+            ),
+            const CommunityToolsPage(),
+            const TrustNetworkPage(),
+            const ToolRecommendationsPage(),
           ],
         ),
       ),

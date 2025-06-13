@@ -59,17 +59,17 @@ class CommunityMember {
 
   factory CommunityMember.fromMap(Map<String, dynamic> map) {
     return CommunityMember(
-      id: map['id'] as String,
-      name: map['name'] as String,
+      id: map['id'] as String? ?? '',
+      name: map['name'] as String? ?? 'Unknown User',
       email: map['email'] as String?,
       phone: map['phone'] as String?,
       photoUrl: map['photoUrl'] as String?,
-      rating: (map['rating'] as num).toDouble(),
-      totalRatings: map['totalRatings'] as int,
+      rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
+      totalRatings: (map['totalRatings'] as num?)?.toInt() ?? 0,
       trustedBy: List<String>.from(map['trustedBy'] ?? []),
       trustedUsers: List<String>.from(map['trustedUsers'] ?? []),
-      joinedDate: (map['joinedDate'] as Timestamp).toDate(),
-      isActive: map['isActive'] as bool,
+      joinedDate: (map['joinedDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isActive: map['isActive'] as bool? ?? true,
       address: map['address'] as String?,
       bio: map['bio'] as String?,
       toolsShared: (map['toolsShared'] as num?)?.toInt() ?? 0,
@@ -115,8 +115,8 @@ class CommunityMember {
 
   factory CommunityMember.fromFirestore(Map<String, dynamic> data) {
     return CommunityMember(
-      id: data['id'] as String,
-      name: data['name'] as String,
+      id: data['id'] as String? ?? '',
+      name: data['name'] as String? ?? 'Unknown User',
       email: data['email'] as String?,
       phone: data['phone'] as String?,
       photoUrl: data['photoUrl'] as String?,
@@ -124,8 +124,9 @@ class CommunityMember {
       totalRatings: (data['totalRatings'] as num?)?.toInt() ?? 0,
       trustedBy: List<String>.from(data['trustedBy'] ?? []),
       trustedUsers: List<String>.from(data['trustedUsers'] ?? []),
-      joinedDate: (data['joinedDate'] as Timestamp).toDate(),
-      isActive: data['isActive'] as bool,
+      joinedDate:
+          (data['joinedDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isActive: data['isActive'] as bool? ?? true,
       address: data['address'] as String?,
       bio: data['bio'] as String?,
       toolsShared: (data['toolsShared'] as num?)?.toInt() ?? 0,

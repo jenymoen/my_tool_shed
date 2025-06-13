@@ -6,8 +6,27 @@ import 'package:my_tool_shed/widgets/community/member_card.dart';
 import 'package:my_tool_shed/pages/community/member_profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class CommunityMembersPage extends StatelessWidget {
-  const CommunityMembersPage({super.key});
+class CommunityMembersPage extends StatefulWidget {
+  final String currentUserId;
+
+  const CommunityMembersPage({
+    super.key,
+    required this.currentUserId,
+  });
+
+  @override
+  State<CommunityMembersPage> createState() => _CommunityMembersPageState();
+}
+
+class _CommunityMembersPageState extends State<CommunityMembersPage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _showAddTrustedMemberDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -109,11 +128,11 @@ class CommunityMembersPage extends StatelessWidget {
                         ? null
                         : bioController.text.trim(),
                     trustedBy: [
-                      currentUserId
+                      widget.currentUserId
                     ], // Add current user as first trust
                   );
 
-                  await communityService.addCommunityMember(newMember);
+                  await CommunityService().addCommunityMember(newMember);
                   if (dialogContext.mounted) {
                     Navigator.of(dialogContext).pop();
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
@@ -130,7 +149,7 @@ class CommunityMembersPage extends StatelessWidget {
                   }
                 }
               },
-              child: Text(l10n.addMember),
+              child: Text(AppLocalizations.of(context)!.addMember),
             ),
           ],
         );
@@ -140,82 +159,241 @@ class CommunityMembersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final communityService = CommunityService();
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddTrustedMemberDialog(context),
-        child: const Icon(Icons.person_add),
         tooltip: 'Add Trusted Member',
+        child: const Icon(Icons.person_add),
       ),
-      body: StreamBuilder<List<CommunityMember>>(
-        stream: communityService.getCommunityMembers(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(l10n.errorLoadingMembers(snapshot.error.toString())),
-            );
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          final members = snapshot.data!;
-
-          if (members.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.people_outline,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.noMembersFound,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.addTrustedMembersToStartBuildingYourCommunity,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search members...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
               ),
-            );
-          }
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<List<CommunityMember>>(
+              stream: CommunityService().getCommunityMembers(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error: ${snapshot.error}'),
+                  );
+                }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: members.length,
-            itemBuilder: (context, index) {
-              final member = members[index];
-              return MemberCard(
-                member: member,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MemberProfilePage(
-                        member: member,
-                        currentUserId: currentUserId,
-                      ),
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                final members = snapshot.data!;
+                final filteredMembers = _searchQuery.isEmpty
+                    ? members
+                    : members
+                        .where((member) =>
+                            member.name
+                                .toLowerCase()
+                                .contains(_searchQuery.toLowerCase()) ||
+                            (member.email ?? '')
+                                .toLowerCase()
+                                .contains(_searchQuery.toLowerCase()))
+                        .toList();
+
+                if (filteredMembers.isEmpty) {
+                  return Center(
+                    child: Text(
+                      _searchQuery.isEmpty
+                          ? 'No members found'
+                          : 'No members match your search',
                     ),
                   );
-                },
-              );
-            },
-          );
-        },
+                }
+
+                return ListView.builder(
+                  itemCount: filteredMembers.length,
+                  itemBuilder: (context, index) {
+                    final member = filteredMembers[index];
+                    return _buildMemberCard(member);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildMemberCard(CommunityMember member) {
+    final isCurrentUser = member.id == widget.currentUserId;
+    print('Debug - Current User ID: ${widget.currentUserId}');
+    print('Debug - Member ID: ${member.id}');
+    print('Debug - Is Current User: $isCurrentUser');
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundImage:
+              member.photoUrl != null ? NetworkImage(member.photoUrl!) : null,
+          child: member.photoUrl == null
+              ? Text(member.name[0].toUpperCase())
+              : null,
+        ),
+        title: Text(member.name),
+        subtitle: Text(member.email ?? 'No email provided'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => _showEditMemberDialog(context, member),
+              tooltip: 'Edit Member',
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_ios),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MemberProfilePage(
+                      member: member,
+                      currentUserId: widget.currentUserId,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditMemberDialog(BuildContext context, CommunityMember member) {
+    final nameController = TextEditingController(text: member.name);
+    final emailController = TextEditingController(text: member.email ?? '');
+    final phoneController = TextEditingController(text: member.phone ?? '');
+    final addressController = TextEditingController(text: member.address ?? '');
+    final bioController = TextEditingController(text: member.bio ?? '');
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(member.id == widget.currentUserId
+              ? 'Edit Profile'
+              : 'Edit Trusted Member'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                  autofocus: true,
+                ),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                  keyboardType: TextInputType.phone,
+                ),
+                TextField(
+                  controller: addressController,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                ),
+                TextField(
+                  controller: bioController,
+                  decoration: const InputDecoration(labelText: 'Bio'),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (nameController.text.isEmpty) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(content: Text('Name is required')),
+                  );
+                  return;
+                }
+
+                try {
+                  final updatedMember = member.copyWith(
+                    name: nameController.text.trim(),
+                    email: emailController.text.trim().isEmpty
+                        ? null
+                        : emailController.text.trim(),
+                    phone: phoneController.text.trim().isEmpty
+                        ? null
+                        : phoneController.text.trim(),
+                    address: addressController.text.trim().isEmpty
+                        ? null
+                        : addressController.text.trim(),
+                    bio: bioController.text.trim().isEmpty
+                        ? null
+                        : bioController.text.trim(),
+                  );
+
+                  await CommunityService().updateCommunityMember(updatedMember);
+
+                  if (mounted) {
+                    Navigator.pop(dialogContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Member updated successfully')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('Error updating member: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

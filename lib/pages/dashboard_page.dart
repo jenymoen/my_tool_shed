@@ -537,9 +537,9 @@ class DashboardPageState extends State<DashboardPage>
 
     try {
       final allTools = await _firestoreService.getToolsStream().first;
-      final availableTools = allTools.where((t) => !t.isBorrowed).toList();
-
       if (!mounted) return;
+
+      final availableTools = allTools.where((t) => !t.isBorrowed).toList();
 
       if (availableTools.isEmpty) {
         if (!mounted) return;
@@ -551,8 +551,6 @@ class DashboardPageState extends State<DashboardPage>
         );
         return;
       }
-
-      if (!mounted) return;
 
       final selectedTool = await showDialog<Tool>(
         context: context,
@@ -609,7 +607,6 @@ class DashboardPageState extends State<DashboardPage>
       );
 
       if (selectedTool != null && mounted) {
-        // Add a small delay to ensure the first dialog is fully closed
         await Future.delayed(const Duration(milliseconds: 100));
         if (!mounted) return;
         _showBorrowReturnDialog(selectedTool, isBorrowing: true);
@@ -648,6 +645,7 @@ class DashboardPageState extends State<DashboardPage>
         return StatefulBuilder(
           builder: (context, setDialogState) {
             void handleDatePicker(bool isStartDate) async {
+              if (!mounted) return;
               final DateTime? picked = await showDatePicker(
                 context: context,
                 initialDate: isStartDate
@@ -656,7 +654,7 @@ class DashboardPageState extends State<DashboardPage>
                 firstDate: isStartDate ? DateTime(2000) : DateTime.now(),
                 lastDate: DateTime(2101),
               );
-              if (picked != null) {
+              if (picked != null && mounted) {
                 setDialogState(() {
                   if (isStartDate) {
                     selectedStartDate = picked;
@@ -668,9 +666,11 @@ class DashboardPageState extends State<DashboardPage>
             }
 
             void showBorrowHistoryDialogLocal() async {
+              if (!mounted) return;
               List<BorrowHistory> historyToShow =
                   await _firestoreService.getBorrowHistoryStream(tool.id).first;
-              if (!dialogContext.mounted) return;
+              if (!mounted) return;
+
               showDialog(
                 context: dialogContext,
                 builder: (BuildContext historyDialogContext) {
@@ -717,6 +717,8 @@ class DashboardPageState extends State<DashboardPage>
             }
 
             Future<void> handleAction() async {
+              if (!mounted) return;
+
               final String borrowerName =
                   selectedBorrower?.name ?? borrowerNameController.text.trim();
 
@@ -740,11 +742,11 @@ class DashboardPageState extends State<DashboardPage>
               }
 
               try {
-                Tool toolToUpdate = tool; // Start with the original tool object
+                Tool toolToUpdate = tool;
 
                 if (isBorrowing) {
                   final newHistoryEntry = BorrowHistory(
-                    id: '', // Firestore will generate
+                    id: '',
                     borrowerId: selectedBorrower!.id,
                     borrowerName: selectedBorrower!.name,
                     borrowerPhone: borrowerPhoneController.text.trim(),
@@ -784,8 +786,6 @@ class DashboardPageState extends State<DashboardPage>
                     );
                     await _firestoreService.updateBorrowHistory(
                         toolToUpdate.id, updatedHistoryEntry);
-                  } else {
-                    // Fallback for data inconsistency
                   }
 
                   toolToUpdate = toolToUpdate.copyWith(

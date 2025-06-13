@@ -19,7 +19,7 @@
     "cancel": "Cancel",
     "markAsBorrowed": "Mark as Borrowed",
     "markAsReturned": "Mark as Returned",
-    "noToolsAvailable": "No tools are available for borrowing.",
+    "noToolsAvailable": "No tools are borrowed out.",
     "scanToolQRCode": "Scan Tool QR Code",
     "positionQRCode": "Position QR code within frame",
     "overdue": "Overdue",

@@ -19,10 +19,47 @@ class CommunityService {
   }
 
   Future<void> updateCommunityMember(CommunityMember member) async {
-    await _firestore
-        .collection(_communityMembersCollection)
-        .doc(member.id)
-        .update(member.toMap());
+    try {
+      // First check if the document exists in the users collection
+      final userDoc = await _firestore.collection('users').doc(member.id).get();
+
+      if (!userDoc.exists) {
+        // If it doesn't exist in users collection, create it
+        await _firestore
+            .collection('users')
+            .doc(member.id)
+            .set(member.toFirestore());
+      } else {
+        // Update the user document
+        await _firestore
+            .collection('users')
+            .doc(member.id)
+            .update(member.toFirestore());
+      }
+
+      // Also ensure it exists in community_members collection
+      final communityDoc = await _firestore
+          .collection(_communityMembersCollection)
+          .doc(member.id)
+          .get();
+
+      if (!communityDoc.exists) {
+        // If it doesn't exist in community_members collection, create it
+        await _firestore
+            .collection(_communityMembersCollection)
+            .doc(member.id)
+            .set(member.toMap());
+      } else {
+        // Update the community member document
+        await _firestore
+            .collection(_communityMembersCollection)
+            .doc(member.id)
+            .update(member.toMap());
+      }
+    } catch (e) {
+      print('Error updating community member: $e');
+      rethrow;
+    }
   }
 
   Future<CommunityMember?> getCommunityMember(String memberId) async {
@@ -47,16 +84,54 @@ class CommunityService {
   Future<void> addTrust(String fromUserId, String toUserId) async {
     final batch = _firestore.batch();
 
-    // Add to trustedUsers list of fromUser
+    // Get references to both documents
     final fromUserRef =
         _firestore.collection(_communityMembersCollection).doc(fromUserId);
+    final toUserRef =
+        _firestore.collection(_communityMembersCollection).doc(toUserId);
+
+    // Check if documents exist and create them if they don't
+    final fromUserDoc = await fromUserRef.get();
+    final toUserDoc = await toUserRef.get();
+
+    if (!fromUserDoc.exists) {
+      // Create the fromUser document with all required fields
+      batch.set(fromUserRef, {
+        'id': fromUserId,
+        'name': 'User $fromUserId', // Temporary name, should be updated later
+        'trustedUsers': [],
+        'trustedBy': [],
+        'rating': 0.0,
+        'totalRatings': 0,
+        'joinedDate': FieldValue.serverTimestamp(),
+        'isActive': true,
+        'toolsShared': 0,
+        'toolsBorrowed': 0,
+      });
+    }
+
+    if (!toUserDoc.exists) {
+      // Create the toUser document with all required fields
+      batch.set(toUserRef, {
+        'id': toUserId,
+        'name': 'User $toUserId', // Temporary name, should be updated later
+        'trustedUsers': [],
+        'trustedBy': [],
+        'rating': 0.0,
+        'totalRatings': 0,
+        'joinedDate': FieldValue.serverTimestamp(),
+        'isActive': true,
+        'toolsShared': 0,
+        'toolsBorrowed': 0,
+      });
+    }
+
+    // Add to trustedUsers list of fromUser
     batch.update(fromUserRef, {
       'trustedUsers': FieldValue.arrayUnion([toUserId])
     });
 
     // Add to trustedBy list of toUser
-    final toUserRef =
-        _firestore.collection(_communityMembersCollection).doc(toUserId);
     batch.update(toUserRef, {
       'trustedBy': FieldValue.arrayUnion([fromUserId])
     });
@@ -67,16 +142,54 @@ class CommunityService {
   Future<void> removeTrust(String fromUserId, String toUserId) async {
     final batch = _firestore.batch();
 
-    // Remove from trustedUsers list of fromUser
+    // Get references to both documents
     final fromUserRef =
         _firestore.collection(_communityMembersCollection).doc(fromUserId);
+    final toUserRef =
+        _firestore.collection(_communityMembersCollection).doc(toUserId);
+
+    // Check if documents exist and create them if they don't
+    final fromUserDoc = await fromUserRef.get();
+    final toUserDoc = await toUserRef.get();
+
+    if (!fromUserDoc.exists) {
+      // Create the fromUser document with all required fields
+      batch.set(fromUserRef, {
+        'id': fromUserId,
+        'name': 'User $fromUserId', // Temporary name, should be updated later
+        'trustedUsers': [],
+        'trustedBy': [],
+        'rating': 0.0,
+        'totalRatings': 0,
+        'joinedDate': FieldValue.serverTimestamp(),
+        'isActive': true,
+        'toolsShared': 0,
+        'toolsBorrowed': 0,
+      });
+    }
+
+    if (!toUserDoc.exists) {
+      // Create the toUser document with all required fields
+      batch.set(toUserRef, {
+        'id': toUserId,
+        'name': 'User $toUserId', // Temporary name, should be updated later
+        'trustedUsers': [],
+        'trustedBy': [],
+        'rating': 0.0,
+        'totalRatings': 0,
+        'joinedDate': FieldValue.serverTimestamp(),
+        'isActive': true,
+        'toolsShared': 0,
+        'toolsBorrowed': 0,
+      });
+    }
+
+    // Remove from trustedUsers list of fromUser
     batch.update(fromUserRef, {
       'trustedUsers': FieldValue.arrayRemove([toUserId])
     });
 
     // Remove from trustedBy list of toUser
-    final toUserRef =
-        _firestore.collection(_communityMembersCollection).doc(toUserId);
     batch.update(toUserRef, {
       'trustedBy': FieldValue.arrayRemove([fromUserId])
     });
