@@ -1,9 +1,11 @@
 // import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Added for Timestamp
 
 class Tool {
   String id;
   String name;
   String? imagePath;
+  String? brand;
   bool isBorrowed;
   DateTime? returnDate;
   String? borrowedBy;
@@ -13,13 +15,12 @@ class Tool {
   String? notes;
   String? qrCode;
   String? category;
-  int maintenanceInterval; // in days
-  DateTime? lastMaintenance;
 
   Tool({
     required this.id,
     required this.name,
     this.imagePath,
+    this.brand,
     this.isBorrowed = false,
     this.returnDate,
     this.borrowedBy,
@@ -29,14 +30,13 @@ class Tool {
     this.notes,
     this.qrCode,
     this.category,
-    this.maintenanceInterval = 0,
-    this.lastMaintenance,
   }) : borrowHistory = borrowHistory ?? [];
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
         'imagePath': imagePath,
+        'brand': brand,
         'isBorrowed': isBorrowed,
         'returnDate': returnDate?.toIso8601String(),
         'borrowedBy': borrowedBy,
@@ -46,14 +46,13 @@ class Tool {
         'notes': notes,
         'qrCode': qrCode,
         'category': category,
-        'maintenanceInterval': maintenanceInterval,
-        'lastMaintenance': lastMaintenance?.toIso8601String(),
       };
 
   factory Tool.fromJson(Map<String, dynamic> json) => Tool(
         id: json['id'] as String,
         name: json['name'] as String,
         imagePath: json['imagePath'] as String?,
+        brand: json['brand'] as String?,
         isBorrowed: json['isBorrowed'] as bool,
         returnDate: json['returnDate'] == null
             ? null
@@ -68,31 +67,52 @@ class Tool {
         notes: json['notes'] as String?,
         qrCode: json['qrCode'] as String?,
         category: json['category'] as String?,
-        maintenanceInterval: json['maintenanceInterval'] as int? ?? 0,
-        lastMaintenance: json['lastMaintenance'] == null
-            ? null
-            : DateTime.parse(json['lastMaintenance'] as String),
       );
 
-  bool needsMaintenance() {
-    if (maintenanceInterval == 0 || lastMaintenance == null) return false;
-    final daysUntilMaintenance = lastMaintenance!
-        .add(Duration(days: maintenanceInterval))
-        .difference(DateTime.now())
-        .inDays;
-    return daysUntilMaintenance <= 0;
-  }
+  // Firestore conversion
+  Map<String, dynamic> toFirestore() => {
+        // id is document ID, not stored in fields
+        'name': name,
+        'imagePath': imagePath,
+        'brand': brand,
+        'isBorrowed': isBorrowed,
+        'returnDate':
+            returnDate == null ? null : Timestamp.fromDate(returnDate!),
+        'borrowedBy': borrowedBy,
+        // borrowHistory will be a subcollection, not stored directly in the tool document
+        'borrowerPhone': borrowerPhone,
+        'borrowerEmail': borrowerEmail,
+        'notes': notes,
+        'qrCode': qrCode,
+        'category': category,
+      };
 
-  int daysUntilMaintenance() {
-    if (maintenanceInterval == 0 || lastMaintenance == null) return -1;
-    return lastMaintenance!
-        .add(Duration(days: maintenanceInterval))
-        .difference(DateTime.now())
-        .inDays;
+  factory Tool.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot,
+      SnapshotOptions? options) {
+    final data = snapshot.data();
+    return Tool(
+      id: snapshot.id, // Get ID from DocumentSnapshot
+      name: data?['name'] as String,
+      imagePath: data?['imagePath'] as String?,
+      brand: data?['brand'] as String?,
+      isBorrowed: data?['isBorrowed'] as bool,
+      returnDate: data?['returnDate'] == null
+          ? null
+          : (data?['returnDate'] as Timestamp).toDate(),
+      borrowedBy: data?['borrowedBy'] as String?,
+      // borrowHistory will be loaded separately from its subcollection
+      borrowerPhone: data?['borrowerPhone'] as String?,
+      borrowerEmail: data?['borrowerEmail'] as String?,
+      notes: data?['notes'] as String?,
+      qrCode: data?['qrCode'] as String?,
+      category: data?['category'] as String?,
+      borrowHistory: [], // Initialize as empty, will be populated from subcollection
+    );
   }
 }
 
 class BorrowHistory {
+  final String id;
   final String borrowerId;
   final String borrowerName;
   final String? borrowerPhone;
@@ -103,6 +123,7 @@ class BorrowHistory {
   final String? notes;
 
   BorrowHistory({
+    required this.id,
     required this.borrowerId,
     required this.borrowerName,
     this.borrowerPhone,
@@ -114,6 +135,7 @@ class BorrowHistory {
   });
 
   Map<String, dynamic> toJson() => {
+        'id': id,
         'borrowerId': borrowerId,
         'borrowerName': borrowerName,
         'borrowerPhone': borrowerPhone,
@@ -125,6 +147,7 @@ class BorrowHistory {
       };
 
   factory BorrowHistory.fromJson(Map<String, dynamic> json) => BorrowHistory(
+        id: json['id'] as String,
         borrowerId: json['borrowerId'] as String,
         borrowerName: json['borrowerName'] as String,
         borrowerPhone: json['borrowerPhone'] as String?,
@@ -136,4 +159,38 @@ class BorrowHistory {
             : DateTime.parse(json['returnDate'] as String),
         notes: json['notes'] as String?,
       );
+
+  // Firestore conversion
+  Map<String, dynamic> toFirestore() => {
+        // id is document ID for subcollection, not stored in fields
+        'borrowerId':
+            borrowerId, // This might be the user ID or a unique ID for the borrower instance
+        'borrowerName': borrowerName,
+        'borrowerPhone': borrowerPhone,
+        'borrowerEmail': borrowerEmail,
+        'borrowDate': Timestamp.fromDate(borrowDate),
+        'dueDate': Timestamp.fromDate(dueDate),
+        'returnDate':
+            returnDate == null ? null : Timestamp.fromDate(returnDate!),
+        'notes': notes,
+      };
+
+  factory BorrowHistory.fromFirestore(
+      DocumentSnapshot<Map<String, dynamic>> snapshot,
+      SnapshotOptions? options) {
+    final data = snapshot.data();
+    return BorrowHistory(
+      id: snapshot.id, // Get ID from DocumentSnapshot
+      borrowerId: data?['borrowerId'] as String,
+      borrowerName: data?['borrowerName'] as String,
+      borrowerPhone: data?['borrowerPhone'] as String?,
+      borrowerEmail: data?['borrowerEmail'] as String?,
+      borrowDate: (data?['borrowDate'] as Timestamp).toDate(),
+      dueDate: (data?['dueDate'] as Timestamp).toDate(),
+      returnDate: data?['returnDate'] == null
+          ? null
+          : (data?['returnDate'] as Timestamp).toDate(),
+      notes: data?['notes'] as String?,
+    );
+  }
 }

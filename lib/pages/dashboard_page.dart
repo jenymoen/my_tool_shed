@@ -1,66 +1,111 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:my_tool_shed/models/tool.dart';
-// import 'package:my_tool_shed/pages/qr_scanner_page.dart';
+import 'package:my_tool_shed/services/firestore_service.dart';
 import 'package:my_tool_shed/services/notification_service.dart';
+// import 'package:my_tool_shed/pages/qr_scanner_page.dart';
 // import 'package:my_tool_shed/services/qr_service.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
+
+// import 'package:path/path.dart' as p;
+// import 'package:shared_preferences/shared_preferences.dart';
+import 'package:my_tool_shed/pages/tools_page.dart'; // For drawer navigation
+import 'package:my_tool_shed/services/auth_service.dart'; // Added for logout
+import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation after logout
+import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
+import 'package:my_tool_shed/pages/settings_page.dart';
+import 'package:my_tool_shed/widgets/language_selector.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  final Function(Locale) onLocaleChanged;
+
+  const DashboardPage({
+    super.key,
+    required this.onLocaleChanged,
+  });
 
   @override
   State<DashboardPage> createState() => DashboardPageState();
 }
 
 class DashboardPageState extends State<DashboardPage> {
-  final List<Tool> _tools = [];
-  static const String _toolskey = 'tools_list'; //Key for SharedPreferences
-  bool _isLoading = true;
+  // final List<Tool> _borrowedTools = []; // Replaced by StreamBuilder
+  // bool _isLoading = true; // Replaced by StreamBuilder states
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
+  // final dbHelper = DatabaseHelper.instance; // Replaced
+  final FirestoreService _firestoreService = FirestoreService(); // Added
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Helper method to get tools that are due soon or need maintenance
-  List<Tool> _getDueSoonTools() {
+  final List<String> _brandOptions = [
+    'Bosch',
+    'Makita',
+    'DeWalt',
+    'Milwaukee',
+    'Ryobi',
+    'Stanley',
+    'Craftsman',
+    'Other'
+  ];
+  // String? _selectedBrand; // Not used directly for adding on dashboard, but keep if dialogs are shared
+
+  List<Tool> _filterBorrowedTools(List<Tool> allTools) {
+    return allTools.where((tool) => tool.isBorrowed).toList();
+  }
+
+  List<Tool> _getDueSoonTools(List<Tool> borrowedTools) {
     final now = DateTime.now();
-    return _tools.where((tool) {
-        if (tool.isBorrowed && tool.returnDate != null) {
-          final daysUntilDue = tool.returnDate!.difference(now).inDays;
-          return daysUntilDue <= 7; // Due within a week
-        }
-        if (tool.maintenanceInterval > 0 && tool.lastMaintenance != null) {
-          return tool.daysUntilMaintenance() <=
-              7; // Maintenance due within a week
-        }
-        return false;
-      }).toList()
+    return borrowedTools.where((tool) {
+      if (tool.returnDate != null) {
+        final daysUntilDue = tool.returnDate!.difference(now).inDays;
+        return daysUntilDue <= 7 &&
+            daysUntilDue >= 0; // Due within a week and not overdue
+      }
+      return false;
+    }).toList()
       ..sort((a, b) {
         final aDate =
-            a.isBorrowed
-                ? a.returnDate!
-                : a.lastMaintenance!.add(Duration(days: a.maintenanceInterval));
+            a.returnDate ?? DateTime.now().add(const Duration(days: 36500));
         final bDate =
-            b.isBorrowed
-                ? b.returnDate!
-                : b.lastMaintenance!.add(Duration(days: b.maintenanceInterval));
+            b.returnDate ?? DateTime.now().add(const Duration(days: 36500));
         return aDate.compareTo(bDate);
       });
   }
 
-  // Helper method to get regular tools (not due soon)
-  List<Tool> _getRegularTools() {
-    final dueSoonTools = _getDueSoonTools();
-    return _tools.where((tool) => !dueSoonTools.contains(tool)).toList();
+  List<Tool> _getOverdueTools(List<Tool> borrowedTools) {
+    final now = DateTime.now();
+    return borrowedTools.where((tool) {
+      if (tool.returnDate != null) {
+        final daysUntilDue = tool.returnDate!.difference(now).inDays;
+        return daysUntilDue < 0; // Overdue
+      }
+      return false;
+    }).toList()
+      ..sort((a, b) {
+        final aDate =
+            a.returnDate ?? DateTime.now().add(const Duration(days: 36500));
+        final bDate =
+            b.returnDate ?? DateTime.now().add(const Duration(days: 36500));
+        return aDate.compareTo(bDate); // Sooner overdue dates first
+      });
   }
 
-  // Helper method to get status text and color for a tool
+  List<Tool> _getRegularBorrowedTools(List<Tool> borrowedTools) {
+    final dueSoonTools = _getDueSoonTools(borrowedTools);
+    final overdueTools = _getOverdueTools(borrowedTools);
+    return borrowedTools
+        .where((tool) =>
+            !dueSoonTools.contains(tool) && !overdueTools.contains(tool))
+        .toList()
+      ..sort((a, b) {
+        // Optional: sort regular tools by name or other criteria
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+  }
+
   (String, Color) _getToolStatus(Tool tool, BuildContext context) {
     final now = DateTime.now();
     if (tool.isBorrowed && tool.returnDate != null) {
@@ -69,520 +114,382 @@ class DashboardPageState extends State<DashboardPage> {
         return ('Overdue by ${-daysUntilDue} days', Colors.red);
       } else if (daysUntilDue <= 7) {
         return ('Due in $daysUntilDue days', Colors.orange);
+      } else {
+        return (
+          'Due in $daysUntilDue days',
+          Theme.of(context).colorScheme.secondary
+        ); // Or a less prominent color
       }
     }
-    if (tool.needsMaintenance()) {
-      return ('Maintenance Overdue', Colors.red);
-    } else if (tool.maintenanceInterval > 0 && tool.lastMaintenance != null) {
-      final daysUntil = tool.daysUntilMaintenance();
-      if (daysUntil <= 7) {
-        return ('Maintenance due in $daysUntil days', Colors.orange);
-      }
-    }
-    return (tool.isBorrowed ? 'Borrowed' : 'Available', Colors.green);
+    return (
+      'Borrowed',
+      Colors.green
+    ); // Should ideally not happen if date is always set
   }
 
   @override
   void initState() {
     super.initState();
-    _loadTools(); // Loads tools when the widget is initialized
+    // _loadBorrowedTools(); // Replaced by StreamBuilder
+    _initBannerAd();
   }
 
-  // --- SharePreferences Logic ---
-  Future<void> _loadTools() async {
-    try {
-      setState(() => _isLoading = true);
-      final prefs = await SharedPreferences.getInstance();
-      final String? toolsString = prefs.getString(_toolskey);
-      if (toolsString != null) {
-        final List<dynamic> toolsJson =
-            jsonDecode(toolsString) as List<dynamic>;
-        if (!mounted) return;
-        setState(() {
-          _tools.clear();
-          _tools.addAll(
-            toolsJson.map(
-              (json) => Tool.fromJson(json as Map<String, dynamic>),
-            ),
-          );
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+  void _initBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-5326232965412305~2242713432',
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() {
+            _isAdLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+    );
+    _bannerAd?.load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
+  // Future<void> _loadBorrowedTools() async { // Removed
+  //   try {
+  //     setState(() => _isLoading = true);
+  //     final loadedTools = await dbHelper.getBorrowedTools();
+  //     if (!mounted) return;
+  //     setState(() {
+  //       _borrowedTools.clear();
+  //       _borrowedTools.addAll(loadedTools);
+  //     });
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() => _isLoading = false);
+  //     }
+  //   }
+  // }
+
+  Widget _buildDrawer(BuildContext context) {
+    final currentUser = AuthService().currentUser;
+    String displayName = currentUser?.displayName ?? 'User';
+    if (displayName.isEmpty) {
+      displayName = 'User';
     }
-  }
+    final l10n = AppLocalizations.of(context)!;
 
-  Future<void> _saveTools() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String toolsString = jsonEncode(
-      _tools.map((tool) => tool.toJson()).toList(),
-    );
-    await prefs.setString(_toolskey, toolsString);
-  }
-
-  // Method to show the Add Tool dialog
-  void _showAddToolDialog() {
-    final nameController = TextEditingController();
-    String? tempImagePath;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            Future<void> handleImageSelection() async {
-              final ImagePicker picker = ImagePicker();
-              final XFile? image = await picker.pickImage(
-                source: ImageSource.gallery,
-              );
-              if (image != null) {
-                try {
-                  final Directory appDir =
-                      await getApplicationDocumentsDirectory();
-                  final String fileName = p.basename(image.path);
-                  final String newPath = p.join(appDir.path, fileName);
-                  final File newImageFile = await File(
-                    image.path,
-                  ).copy(newPath);
-
-                  if (dialogContext.mounted) {
-                    setDialogState(() {
-                      tempImagePath = newImageFile.path;
-                    });
-                  }
-                } catch (e) {
-                  if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(content: Text('Error processing image: $e')),
-                    );
-                  }
-                }
-              }
-            }
-
-            Future<void> handleTakePicture() async {
-              final ImagePicker picker = ImagePicker();
-              final XFile? image = await picker.pickImage(
-                source: ImageSource.camera,
-              );
-              if (image != null) {
-                try {
-                  final Directory appDir =
-                      await getApplicationDocumentsDirectory();
-                  final String fileName = p.basename(image.path);
-                  final String newPath = p.join(appDir.path, fileName);
-                  final File newImageFile = await File(
-                    image.path,
-                  ).copy(newPath);
-
-                  if (dialogContext.mounted) {
-                    setDialogState(() {
-                      tempImagePath = newImageFile.path;
-                    });
-                  }
-                } catch (e) {
-                  if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      SnackBar(content: Text('Error processing image: $e')),
-                    );
-                  }
-                }
-              }
-            }
-
-            Future<void> handleAddTool() async {
-              final String name = nameController.text.trim();
-              if (name.isNotEmpty) {
-                final newTool = Tool(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  name: name,
-                  imagePath: tempImagePath,
-                );
-                setState(() {
-                  _tools.add(newTool);
-                });
-                await _saveTools();
-                if (dialogContext.mounted) {
-                  Navigator.of(dialogContext).pop();
-                }
-              }
-            }
-
-            return AlertDialog(
-              title: const Text('Add New Tool'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        hintText: "Enter tool name",
-                      ),
-                      autofocus: true,
-                    ),
-                    const SizedBox(height: 15),
-                    if (tempImagePath != null)
-                      Image.file(
-                        File(tempImagePath!),
-                        height: 100,
-                        fit: BoxFit.cover,
-                        frameBuilder: (
-                          context,
-                          child,
-                          frame,
-                          wasSynchronouslyLoaded,
-                        ) {
-                          if (frame == null) {
-                            return const SizedBox(
-                              height: 100,
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-                          return child;
-                        },
-                      ),
-                    TextButton.icon(
-                      icon: const Icon(Icons.image_search),
-                      label: const Text('Select Image'),
-                      onPressed: handleImageSelection,
-                    ),
-                    TextButton.icon(
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Take Picture'),
-                      onPressed: handleTakePicture,
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                ),
-                TextButton(onPressed: handleAddTool, child: const Text('Add')),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // Method to show the Borrow/Return dialog
-  void _showBorrowReturnDialog(Tool tool) {
-    final borrowerNameController = TextEditingController(
-      text: tool.borrowedBy ?? '',
-    );
-    final borrowerPhoneController = TextEditingController(
-      text: tool.borrowerPhone ?? '',
-    );
-    final borrowerEmailController = TextEditingController(
-      text: tool.borrowerEmail ?? '',
-    );
-    final notesController = TextEditingController(text: tool.notes ?? '');
-    DateTime? selectedReturnDate = tool.returnDate;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return StatefulBuilder(
-          builder: (dialogContext, setDialogState) {
-            Future<void> handleDatePicker() async {
-              final DateTime? picked = await showDatePicker(
-                context: dialogContext,
-                firstDate: DateTime.now(),
-                lastDate: DateTime(2101),
-              );
-              if (picked != null &&
-                  picked != selectedReturnDate &&
-                  dialogContext.mounted) {
-                setDialogState(() {
-                  selectedReturnDate = picked;
-                });
-              }
-            }
-
-            Future<void> handleBorrowReturn() async {
-              final String borrowerName = borrowerNameController.text.trim();
-              if (!tool.isBorrowed &&
-                  (borrowerName.isEmpty || selectedReturnDate == null)) {
-                if (dialogContext.mounted) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Please enter borrower name and select return date.',
-                      ),
-                    ),
-                  );
-                }
-                return;
-              }
-
-              try {
-                if (tool.isBorrowed) {
-                  // Create history entry for the return
-                  final history = tool.borrowHistory.lastWhere(
-                    (h) => h.returnDate == null,
-                  );
-                  final updatedHistory = BorrowHistory(
-                    borrowerId: history.borrowerId,
-                    borrowerName: history.borrowerName,
-                    borrowerPhone: history.borrowerPhone,
-                    borrowerEmail: history.borrowerEmail,
-                    borrowDate: history.borrowDate,
-                    dueDate: history.dueDate,
-                    returnDate: DateTime.now(),
-                    notes: notesController.text.trim(),
-                  );
-
-                  tool.borrowHistory[tool.borrowHistory.indexOf(history)] =
-                      updatedHistory;
-                  tool.isBorrowed = false;
-                  tool.borrowedBy = null;
-                  tool.borrowerPhone = null;
-                  tool.borrowerEmail = null;
-                  tool.returnDate = null;
-                  tool.notes = null;
-
-                  // Cancel any existing notifications
-                  await NotificationService().cancelToolNotifications(tool);
-                } else {
-                  // Create new borrow entry
-                  final newHistory = BorrowHistory(
-                    borrowerId:
-                        DateTime.now().millisecondsSinceEpoch.toString(),
-                    borrowerName: borrowerName,
-                    borrowerPhone: borrowerPhoneController.text.trim(),
-                    borrowerEmail:
-                        borrowerEmailController.text.trim().isEmpty
-                            ? null
-                            : borrowerEmailController.text.trim(),
-                    borrowDate: DateTime.now(),
-                    dueDate: selectedReturnDate!,
-                    notes: notesController.text.trim(),
-                  );
-
-                  tool.borrowHistory.add(newHistory);
-                  tool.isBorrowed = true;
-                  tool.borrowedBy = borrowerName;
-                  tool.borrowerPhone = borrowerPhoneController.text.trim();
-                  tool.borrowerEmail =
-                      borrowerEmailController.text.trim().isEmpty
-                          ? null
-                          : borrowerEmailController.text.trim();
-                  tool.returnDate = selectedReturnDate;
-                  tool.notes = notesController.text.trim();
-
-                  // Schedule return reminder
-                  await NotificationService().scheduleReturnReminder(tool);
-                }
-
-                setState(() {});
-                await _saveTools();
-                if (dialogContext.mounted) {
-                  Navigator.of(dialogContext).pop();
-                }
-              } catch (e) {
-                if (dialogContext.mounted) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(content: Text('Error updating tool: $e')),
-                  );
-                }
-              }
-            }
-
-            void showBorrowHistory() {
-              showDialog(
-                context: dialogContext,
-                builder: (BuildContext historyContext) {
-                  return AlertDialog(
-                    title: Text('${tool.name} - Borrow History'),
-                    content: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children:
-                            tool.borrowHistory.map((history) {
-                              return Card(
-                                child: ListTile(
-                                  title: Text(history.borrowerName),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Borrowed: ${DateFormat.yMd().format(history.borrowDate)}',
-                                      ),
-                                      Text(
-                                        'Due: ${DateFormat.yMd().format(history.dueDate)}',
-                                      ),
-                                      if (history.returnDate != null)
-                                        Text(
-                                          'Returned: ${DateFormat.yMd().format(history.returnDate!)}',
-                                        ),
-                                      if (history.notes?.isNotEmpty ?? false)
-                                        Text('Notes: ${history.notes}'),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        child: const Text('Close'),
-                        onPressed: () => Navigator.of(historyContext).pop(),
-                      ),
-                    ],
-                  );
-                },
-              );
-            }
-
-            return AlertDialog(
-              title: Text(tool.isBorrowed ? 'Return Tool' : 'Borrow Tool'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    if (tool.imagePath != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Image.file(
-                          File(tool.imagePath!),
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    Text('Tool: ${tool.name}'),
-                    if (!tool.isBorrowed) ...[
-                      TextField(
-                        controller: borrowerNameController,
-                        decoration: const InputDecoration(
-                          labelText: "Borrower Name",
-                          hintText: "Enter borrower's name",
-                        ),
-                        autofocus: true,
-                      ),
-                      TextField(
-                        controller: borrowerPhoneController,
-                        decoration: const InputDecoration(
-                          labelText: "Phone Number",
-                          hintText: "Enter borrower's phone",
-                        ),
-                        keyboardType: TextInputType.phone,
-                      ),
-                      TextField(
-                        controller: borrowerEmailController,
-                        decoration: const InputDecoration(
-                          labelText: "Email",
-                          hintText: "Enter borrower's email",
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            selectedReturnDate == null
-                                ? 'Select return date'
-                                : 'Return by: ${DateFormat.yMd().format(selectedReturnDate!)}',
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.calendar_today),
-                            onPressed: handleDatePicker,
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (tool.isBorrowed) ...[
-                      Text(
-                        'Currently borrowed by: ${tool.borrowedBy ?? 'Unknown'}',
-                      ),
-                      if (tool.borrowerPhone != null)
-                        Text('Phone: ${tool.borrowerPhone}'),
-                      if (tool.borrowerEmail != null)
-                        Text('Email: ${tool.borrowerEmail}'),
-                      if (tool.returnDate != null)
-                        Text(
-                          'Return date: ${DateFormat.yMd().format(tool.returnDate!)}',
-                        ),
-                    ],
-                    TextField(
-                      controller: notesController,
-                      decoration: const InputDecoration(
-                        labelText: "Notes",
-                        hintText: "Add any notes about the borrowing",
-                      ),
-                      maxLines: 3,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        TextButton.icon(
-                          icon: const Icon(Icons.history),
-                          label: const Text('History'),
-                          onPressed: showBorrowHistory,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                ),
-                TextButton(
-                  onPressed: handleBorrowReturn,
-                  child: Text(
-                    tool.isBorrowed ? 'Mark as returned' : 'Mark as Borrowed',
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  l10n.appTitle,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  'Hi, $displayName',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
               ],
-            );
-          },
-        );
-      },
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: Text(l10n.dashboard),
+            onTap: () {
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.build),
+            title: Text(l10n.allTools),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ToolsPage(
+                    onLocaleChanged: widget.onLocaleChanged,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: Text(l10n.profile),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              );
+            },
+          ),
+          const Spacer(),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: Text(l10n.settings),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsPage(
+                    onLocaleChanged: widget.onLocaleChanged,
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: Text(l10n.logout),
+            onTap: () async {
+              Navigator.pop(context);
+              await AuthService().signOut();
+              if (mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (Route<dynamic> route) => false,
+                );
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 
-  void _deleteTool(Tool tool) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        Future<void> handleDelete() async {
-          setState(() {
-            _tools.removeWhere((t) => t.id == tool.id);
-          });
-          await _saveTools();
-          if (dialogContext.mounted) {
-            Navigator.of(dialogContext).pop();
-            ScaffoldMessenger.of(
-              dialogContext,
-            ).showSnackBar(SnackBar(content: Text('"${tool.name}" deleted.')));
-          }
-        }
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
 
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text(l10n.dashboard),
+        leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => _scaffoldKey.currentState?.openDrawer()),
+      ),
+      drawer: _buildDrawer(context),
+      body: StreamBuilder<List<Tool>>(
+        stream: _firestoreService.getToolsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+                child: Text('Error loading tools: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text(l10n.noToolsAvailable));
+          }
+
+          final allTools = snapshot.data!;
+          final borrowedTools = _filterBorrowedTools(allTools);
+
+          if (borrowedTools.isEmpty) {
+            return Center(child: Text(l10n.noToolsAvailable));
+          }
+
+          final overdueTools = _getOverdueTools(borrowedTools);
+          final dueSoonTools = _getDueSoonTools(borrowedTools);
+          final regularBorrowedTools = _getRegularBorrowedTools(borrowedTools);
+
+          List<Widget> listItems = [];
+
+          if (overdueTools.isNotEmpty) {
+            listItems.add(Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text('${l10n.overdue} (${overdueTools.length})',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.red, fontWeight: FontWeight.bold)),
+            ));
+            listItems.addAll(
+                overdueTools.map((tool) => _buildToolTile(tool)).toList());
+            listItems.add(const Divider());
+          }
+
+          if (dueSoonTools.isNotEmpty) {
+            listItems.add(Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text('${l10n.dueSoon} (${dueSoonTools.length})',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.orange, fontWeight: FontWeight.bold)),
+            ));
+            listItems.addAll(
+                dueSoonTools.map((tool) => _buildToolTile(tool)).toList());
+            listItems.add(const Divider());
+          }
+
+          if (regularBorrowedTools.isNotEmpty) {
+            listItems.add(Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                  '${l10n.otherBorrowedItems} (${regularBorrowedTools.length})',
+                  style: Theme.of(context).textTheme.titleMedium),
+            ));
+            listItems.addAll(regularBorrowedTools
+                .map((tool) => _buildToolTile(tool))
+                .toList());
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  // Changed from ListView.builder to simple ListView for sections
+                  children: listItems,
+                ),
+              ),
+              if (_isAdLoaded)
+                Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 20.0, bottom: 125.0),
+                    child: Container(
+                      alignment: Alignment.centerLeft,
+                      height: _bannerAd?.size.height.toDouble(),
+                      width: _bannerAd?.size.width.toDouble(),
+                      child: AdWidget(ad: _bannerAd!),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'borrow_tool_dashboard',
+        onPressed: () => _showSelectToolToBorrowDialog(context),
+        tooltip: l10n.borrowTool,
+        icon: const Icon(Icons.add_shopping_cart),
+        label: Text(l10n.borrowTool),
+      ),
+    );
+  }
+
+  Widget _buildToolTile(Tool tool) {
+    final l10n = AppLocalizations.of(context)!;
+    final (statusText, statusColor) = _getToolStatus(tool, context);
+    return ListTile(
+      leading: tool.imagePath != null && File(tool.imagePath!).existsSync()
+          ? SizedBox(
+              width: 50,
+              height: 50,
+              child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.file(File(tool.imagePath!),
+                      fit: BoxFit.cover,
+                      frameBuilder: (context, child, frame,
+                              wasSynchronouslyLoaded) =>
+                          frame == null
+                              ? const Center(child: CircularProgressIndicator())
+                              : child,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.construction, size: 40))))
+          : const Icon(Icons.construction, size: 40),
+      title: Text(tool.name),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(statusText,
+              style:
+                  TextStyle(color: statusColor, fontWeight: FontWeight.bold)),
+          if (tool.brand != null && tool.brand!.isNotEmpty)
+            Text(l10n.brand(tool.brand!)),
+          Text(l10n.borrowedBy(tool.borrowedBy ?? 'N/A')),
+          if (tool.returnDate != null)
+            Text(l10n.returnBy(DateFormat.yMd().format(tool.returnDate!))),
+        ],
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.undo), // Icon for returning a tool
+        tooltip: l10n.returnTool,
+        onPressed: () => _showBorrowReturnDialog(tool, isBorrowing: false),
+      ),
+      onTap: () =>
+          _showBorrowReturnDialog(tool, isBorrowing: false), // Tap to return
+    );
+  }
+
+  void _showSelectToolToBorrowDialog(BuildContext pageContext) async {
+    // pageContext to avoid conflict
+    // Use FirestoreService to get available tools
+    final allTools = await _firestoreService.getToolsStream().first;
+    final availableTools = allTools.where((t) => !t.isBorrowed).toList();
+
+    if (!pageContext.mounted) return;
+
+    if (availableTools.isEmpty) {
+      ScaffoldMessenger.of(pageContext).showSnackBar(
+        const SnackBar(
+            content: Text('No tools are currently available to borrow.')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: pageContext,
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('Delete Tool'),
-          content: Text(
-            'Are you sure you want to delete "${tool.name}"? This cannot be undone.',
+          title: const Text('Select Tool to Borrow'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: availableTools.length,
+              itemBuilder: (BuildContext context, int index) {
+                final tool = availableTools[index];
+                return ListTile(
+                  title: Text(tool.name),
+                  leading: tool.imagePath != null &&
+                          File(tool.imagePath!).existsSync()
+                      ? Image.file(File(tool.imagePath!),
+                          width: 40, height: 40, fit: BoxFit.cover)
+                      : const Icon(Icons.construction),
+                  onTap: () {
+                    Navigator.of(dialogContext).pop(); // Close this dialog
+                    _showBorrowReturnDialog(tool,
+                        isBorrowing:
+                            true); // Open borrow dialog for selected tool
+                  },
+                );
+              },
+            ),
           ),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
-              onPressed: () => Navigator.of(dialogContext).pop(),
-            ),
-            TextButton(
-              onPressed: handleDelete,
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
             ),
           ],
         );
@@ -590,171 +497,358 @@ class DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
+  // Updated _showBorrowReturnDialog to handle both borrowing and returning
+  // Needs to be fully refactored for Firestore
+  void _showBorrowReturnDialog(Tool tool, {required bool isBorrowing}) {
+    final borrowerNameController =
+        TextEditingController(text: isBorrowing ? '' : tool.borrowedBy ?? '');
+    final borrowerPhoneController = TextEditingController(
+        text: isBorrowing ? '' : tool.borrowerPhone ?? '');
+    final borrowerEmailController = TextEditingController(
+        text: isBorrowing ? '' : tool.borrowerEmail ?? '');
+    // For returns, notes could be existing tool.notes or new return notes.
+    // For borrows, notes are new.
+    final notesController =
+        TextEditingController(text: isBorrowing ? '' : tool.notes ?? '');
+    DateTime? selectedReturnDate = isBorrowing ? null : tool.returnDate;
+    DateTime? selectedStartDate = isBorrowing ? DateTime.now() : null;
 
-    final dueSoonTools = _getDueSoonTools();
-    final regularTools = _getRegularTools();
+    showDialog(
+      context: context, // Assuming this.context is the Page's context
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            Future<void> handleDatePicker(bool isStartDate) async {
+              final DateTime? picked = await showDatePicker(
+                context: dialogContext,
+                initialDate: isStartDate
+                    ? (selectedStartDate ?? DateTime.now())
+                    : (selectedReturnDate ?? DateTime.now()),
+                firstDate: isStartDate ? DateTime(2000) : DateTime.now(),
+                lastDate: DateTime(2101),
+              );
+              if (picked != null) {
+                setDialogState(() {
+                  if (isStartDate) {
+                    selectedStartDate = picked;
+                  } else {
+                    selectedReturnDate = picked;
+                  }
+                });
+              }
+            }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('My Tool Shed - Dashboard')),
-      body: Column(
-        children: [
-          Expanded(
-            child:
-                _tools.isEmpty
-                    ? const Center(child: Text('No tools yet. Add some!'))
-                    : ListView(
-                      children: [
-                        if (dueSoonTools.isNotEmpty) ...[
-                          Container(
-                            padding: const EdgeInsets.all(8.0),
-                            color: Colors.amber.shade50,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.all(8.0),
-                                  child: Text(
-                                    'Due Soon',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
+            Future<void> handleAction() async {
+              final String borrowerName = borrowerNameController.text.trim();
+
+              if (isBorrowing &&
+                  (borrowerName.isEmpty ||
+                      selectedReturnDate == null ||
+                      selectedStartDate == null)) {
+                if (dialogContext.mounted) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(
+                        content: Text(
+                            'Please enter borrower name and select both start and return dates.')),
+                  );
+                }
+                return;
+              }
+
+              try {
+                Tool toolToUpdate = Tool(
+                    // Create a mutable copy or fetch fresh if necessary
+                    id: tool.id,
+                    name: tool.name,
+                    imagePath: tool.imagePath,
+                    brand: tool.brand,
+                    isBorrowed: tool.isBorrowed,
+                    returnDate: tool.returnDate,
+                    borrowedBy: tool.borrowedBy,
+                    borrowHistory: List<BorrowHistory>.from(tool.borrowHistory),
+                    borrowerPhone: tool.borrowerPhone,
+                    borrowerEmail: tool.borrowerEmail,
+                    notes: tool.notes, // Keep existing notes unless overridden
+                    qrCode: tool.qrCode,
+                    category: tool.category);
+
+                if (isBorrowing) {
+                  // Borrowing logic
+                  final newHistoryEntry = BorrowHistory(
+                    id: '', // Firestore generates
+                    borrowerId: _firestoreService.currentUser?.uid ??
+                        'borrow_action_user',
+                    borrowerName: borrowerName,
+                    borrowerPhone: borrowerPhoneController.text.trim(),
+                    borrowerEmail: borrowerEmailController.text.trim().isEmpty
+                        ? null
+                        : borrowerEmailController.text.trim(),
+                    borrowDate: selectedStartDate!,
+                    dueDate: selectedReturnDate!,
+                    notes: notesController.text.trim(),
+                  );
+                  await _firestoreService.addBorrowHistory(
+                      toolToUpdate.id, newHistoryEntry);
+
+                  toolToUpdate.isBorrowed = true;
+                  toolToUpdate.borrowedBy = borrowerName;
+                  toolToUpdate.borrowerPhone =
+                      borrowerPhoneController.text.trim();
+                  toolToUpdate.borrowerEmail =
+                      borrowerEmailController.text.trim().isEmpty
+                          ? null
+                          : borrowerEmailController.text.trim();
+                  toolToUpdate.returnDate = selectedReturnDate;
+                  // toolToUpdate.notes = notesController.text.trim(); // Overwrite tool notes with borrow notes
+                  await NotificationService()
+                      .scheduleReturnReminder(toolToUpdate);
+                } else {
+                  // Returning logic
+                  List<BorrowHistory> historyList = await _firestoreService
+                      .getBorrowHistoryStream(toolToUpdate.id)
+                      .first;
+                  BorrowHistory? activeHistory;
+                  for (var h in historyList) {
+                    if (h.returnDate == null) {
+                      activeHistory = h;
+                      break;
+                    }
+                  }
+
+                  if (activeHistory != null) {
+                    final updatedHistoryEntry = BorrowHistory(
+                      id: activeHistory.id,
+                      borrowerId: activeHistory.borrowerId,
+                      borrowerName: activeHistory.borrowerName,
+                      borrowerPhone: activeHistory.borrowerPhone,
+                      borrowerEmail: activeHistory.borrowerEmail,
+                      borrowDate: activeHistory.borrowDate,
+                      dueDate: activeHistory.dueDate,
+                      returnDate: DateTime.now(),
+                      notes:
+                          notesController.text.trim(), // These are return notes
+                    );
+                    await _firestoreService.updateBorrowHistory(
+                        toolToUpdate.id, updatedHistoryEntry);
+                  } else {
+                    // Fallback if no active history found (should be rare for a borrowed tool)
+                    final newHistoryEntry = BorrowHistory(
+                      id: '', // Firestore generates
+                      borrowerId: _firestoreService.currentUser?.uid ??
+                          'return_action_user',
+                      borrowerName:
+                          toolToUpdate.borrowedBy ?? "Unknown on return",
+                      borrowDate: toolToUpdate.returnDate
+                              ?.subtract(const Duration(days: 1)) ??
+                          DateTime.now().subtract(const Duration(days: 1)),
+                      dueDate: toolToUpdate.returnDate ?? DateTime.now(),
+                      returnDate: DateTime.now(),
+                      notes: "Tool returned. ${notesController.text.trim()}",
+                    );
+                    await _firestoreService.addBorrowHistory(
+                        toolToUpdate.id, newHistoryEntry);
+                  }
+
+                  toolToUpdate.isBorrowed = false;
+                  toolToUpdate.borrowedBy = null;
+                  toolToUpdate.borrowerPhone = null;
+                  toolToUpdate.borrowerEmail = null;
+                  toolToUpdate.returnDate = null;
+                  // toolToUpdate.notes = notesController.text.trim(); // Could update tool notes with return notes
+                  await NotificationService()
+                      .cancelToolNotifications(toolToUpdate);
+                }
+
+                await _firestoreService.updateTool(toolToUpdate);
+                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  // Use page's context
+                  SnackBar(
+                      content: Text(
+                          'Tool \"${toolToUpdate.name}\" ${isBorrowing ? "borrowed" : "returned"} successfully.')),
+                );
+              } catch (e) {
+                if (dialogContext.mounted) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(content: Text('Action failed: $e')),
+                  );
+                }
+              }
+            }
+
+            void showBorrowHistoryDialogLocal() async {
+              // Renamed to avoid conflict
+              List<BorrowHistory> historyToShow =
+                  await _firestoreService.getBorrowHistoryStream(tool.id).first;
+              if (!dialogContext.mounted)
+                return; // Check before showing another dialog
+              showDialog(
+                context:
+                    dialogContext, // Use the current dialog's context for nesting
+                builder: (BuildContext historyDialogContext) {
+                  return AlertDialog(
+                    title: Text('${tool.name} - Borrow History'),
+                    content: SingleChildScrollView(
+                      child: historyToShow.isEmpty
+                          ? const Text('No borrow history for this tool.')
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: historyToShow.map((history) {
+                                return Card(
+                                  child: ListTile(
+                                    title: Text(history.borrowerName),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                            'Borrowed: ${DateFormat.yMd().format(history.borrowDate)}'),
+                                        Text(
+                                            'Due: ${DateFormat.yMd().format(history.dueDate)}'),
+                                        if (history.returnDate != null)
+                                          Text(
+                                              'Returned: ${DateFormat.yMd().format(history.returnDate!)}'),
+                                        if (history.notes?.isNotEmpty ?? false)
+                                          Text('Notes: ${history.notes}'),
+                                      ],
                                     ),
                                   ),
-                                ),
-                                ...dueSoonTools.map(
-                                  (tool) => _buildToolTile(tool),
-                                ),
-                              ],
+                                );
+                              }).toList(),
                             ),
-                          ),
-                          const Divider(thickness: 2),
+                    ),
+                    actions: [
+                      TextButton(
+                          child: const Text('Close'),
+                          onPressed: () =>
+                              Navigator.of(historyDialogContext).pop())
+                    ],
+                  );
+                },
+              );
+            }
+
+            return AlertDialog(
+              title: Text(isBorrowing
+                  ? 'Borrow Tool: ${tool.name}'
+                  : 'Return Tool: ${tool.name}'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (tool.imagePath != null)
+                      Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Image.file(File(tool.imagePath!),
+                              height: 100, fit: BoxFit.cover)),
+                    if (isBorrowing) ...[
+                      TextField(
+                        controller: borrowerNameController,
+                        decoration: const InputDecoration(
+                            labelText: "Borrower Name",
+                            hintText: "Enter borrower's name"),
+                        autofocus: true,
+                      ),
+                      TextField(
+                        controller: borrowerPhoneController,
+                        decoration: const InputDecoration(
+                            labelText: "Phone Number",
+                            hintText: "Enter borrower's phone"),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      TextField(
+                        controller: borrowerEmailController,
+                        decoration: const InputDecoration(
+                            labelText: "Email",
+                            hintText: "Enter borrower's email"),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(selectedStartDate == null
+                              ? 'Select start date'
+                              : 'Start date: ${DateFormat.yMd().format(selectedStartDate!)}'),
+                          IconButton(
+                            icon: const Icon(Icons.calendar_today),
+                            onPressed: () => handleDatePicker(true),
+                          )
                         ],
-                        ...regularTools.map((tool) => _buildToolTile(tool)),
+                      ),
+                    ] else ...[
+                      // Displaying info for returning
+                      Text('Borrowed by: ${tool.borrowedBy ?? 'N/A'}'),
+                      if (tool.borrowerPhone != null)
+                        Text('Phone: ${tool.borrowerPhone}'),
+                      if (tool.borrowerEmail != null)
+                        Text('Email: ${tool.borrowerEmail}'),
+                      if (tool.returnDate != null)
+                        Text(
+                            'Original due date: ${DateFormat.yMd().format(tool.returnDate!)}'),
+                    ],
+                    TextField(
+                      controller: notesController,
+                      decoration: InputDecoration(
+                          labelText:
+                              isBorrowing ? "Borrow Notes" : "Return Notes",
+                          hintText: isBorrowing
+                              ? "Add any notes about borrowing"
+                              : "Add any notes about the return"),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    if (isBorrowing) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(selectedStartDate == null
+                              ? 'Select start date'
+                              : 'Start date: ${DateFormat.yMd().format(selectedStartDate!)}'),
+                          IconButton(
+                            icon: const Icon(Icons.calendar_today),
+                            onPressed: () => handleDatePicker(true),
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(selectedReturnDate == null
+                            ? 'Select return date'
+                            : 'Return by: ${DateFormat.yMd().format(selectedReturnDate!)}'),
+                        IconButton(
+                          icon: const Icon(Icons.calendar_today),
+                          onPressed: () => handleDatePicker(false),
+                        )
                       ],
                     ),
-          ),
-          if (_isAdLoaded)
-            Container(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 20.0, bottom: 125.0),
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  height: _bannerAd?.size.height.toDouble(),
-                  width: _bannerAd?.size.width.toDouble(),
-                  child: AdWidget(ad: _bannerAd!),
+                    const SizedBox(height: 16),
+                    TextButton.icon(
+                      icon: const Icon(Icons.history),
+                      label: const Text('View Borrow History'),
+                      onPressed: showBorrowHistoryDialogLocal,
+                    ),
+                  ],
                 ),
               ),
-            ),
-        ],
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // FloatingActionButton(
-          //   heroTag: 'qr_scan',
-          //   onPressed: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(
-          //         builder: (context) => QRScannerPage(
-          //           onToolScanned: (scannedTool) {
-          //             final existingTool = _tools.firstWhere(
-          //               (t) => t.id == scannedTool.id,
-          //               orElse: () => scannedTool,
-          //             );
-          //             _showBorrowReturnDialog(existingTool);
-          //           },
-          //         ),
-          //       ),
-          //     );
-          //   },
-          //   child: const Icon(Icons.qr_code_scanner),
-          // ),
-          // const SizedBox(height: 16),
-          FloatingActionButton(
-            heroTag: 'add_tool',
-            onPressed: _showAddToolDialog,
-            tooltip: 'Add Tool',
-            child: const Icon(Icons.add),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToolTile(Tool tool) {
-    final (statusText, statusColor) = _getToolStatus(tool, context);
-
-    return ListTile(
-      leading:
-          tool.imagePath != null && File(tool.imagePath!).existsSync()
-              ? SizedBox(
-                width: 50,
-                height: 50,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.file(
-                    File(tool.imagePath!),
-                    fit: BoxFit.cover,
-                    frameBuilder: (
-                      context,
-                      child,
-                      frame,
-                      wasSynchronouslyLoaded,
-                    ) {
-                      if (frame == null) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      return child;
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.construction, size: 40);
-                    },
-                  ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
                 ),
-              )
-              : const Icon(Icons.construction, size: 40),
-      title: Text(tool.name),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            statusText,
-            style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
-          ),
-          if (tool.isBorrowed && tool.borrowedBy != null)
-            Text('Borrowed by: ${tool.borrowedBy}'),
-          if (tool.category != null)
-            Text(
-              'Category: ${tool.category}',
-              style: TextStyle(color: Theme.of(context).colorScheme.secondary),
-            ),
-        ],
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            tool.isBorrowed
-                ? Icons.handshake_outlined
-                : Icons.check_circle_outline,
-            color: statusColor,
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: () => _deleteTool(tool),
-            tooltip: 'Delete Tool',
-          ),
-        ],
-      ),
-      onTap: () => _showBorrowReturnDialog(tool),
-      onLongPress: () => _deleteTool(tool),
+                TextButton(
+                  onPressed: handleAction,
+                  child: Text(
+                      isBorrowing ? 'Mark as Borrowed' : 'Mark as Returned'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
