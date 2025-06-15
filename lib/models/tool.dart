@@ -1,20 +1,33 @@
 // import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Added for Timestamp
+import 'package:my_tool_shed/utils/logger.dart';
 
 class Tool {
-  String id;
-  String name;
-  String? imagePath;
-  String? brand;
-  bool isBorrowed;
-  DateTime? returnDate;
-  String? borrowedBy;
-  List<BorrowHistory> borrowHistory;
-  String? borrowerPhone;
-  String? borrowerEmail;
-  String? notes;
-  String? qrCode;
-  String? category;
+  final String id;
+  final String name;
+  final String? imagePath;
+  final String? brand;
+  final bool isBorrowed;
+  final DateTime? returnDate;
+  final String? borrowedBy;
+  final List<BorrowHistory> borrowHistory;
+  final String? borrowerPhone;
+  final String? borrowerEmail;
+  final String? notes;
+  final String? qrCode;
+  final String? category;
+  final bool isAvailableForCommunity;
+  final List<String>
+      allowedBorrowers; // List of user IDs who can borrow this tool
+  final double communityRating;
+  final int totalCommunityRatings;
+  final String ownerId;
+  final String ownerName;
+  final bool requiresApproval;
+  final String? location;
+  final String? condition;
+  final DateTime lastMaintenanceDate;
+  final String? maintenanceNotes;
 
   Tool({
     required this.id,
@@ -30,44 +43,162 @@ class Tool {
     this.notes,
     this.qrCode,
     this.category,
-  }) : borrowHistory = borrowHistory ?? [];
+    this.isAvailableForCommunity = false,
+    List<String>? allowedBorrowers,
+    this.communityRating = 0.0,
+    this.totalCommunityRatings = 0,
+    required this.ownerId,
+    required this.ownerName,
+    this.requiresApproval = true,
+    this.location,
+    this.condition,
+    DateTime? lastMaintenanceDate,
+    this.maintenanceNotes,
+  })  : borrowHistory = borrowHistory ?? [],
+        allowedBorrowers = allowedBorrowers ?? [],
+        lastMaintenanceDate = lastMaintenanceDate ?? DateTime.now();
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'imagePath': imagePath,
-        'brand': brand,
-        'isBorrowed': isBorrowed,
-        'returnDate': returnDate?.toIso8601String(),
-        'borrowedBy': borrowedBy,
-        'borrowHistory': borrowHistory.map((h) => h.toJson()).toList(),
-        'borrowerPhone': borrowerPhone,
-        'borrowerEmail': borrowerEmail,
-        'notes': notes,
-        'qrCode': qrCode,
-        'category': category,
-      };
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'imagePath': imagePath,
+      'brand': brand,
+      'isBorrowed': isBorrowed,
+      'returnDate': returnDate != null ? Timestamp.fromDate(returnDate!) : null,
+      'borrowedBy': borrowedBy,
+      'borrowHistory': borrowHistory.map((x) => x.toMap()).toList(),
+      'borrowerPhone': borrowerPhone,
+      'borrowerEmail': borrowerEmail,
+      'notes': notes,
+      'qrCode': qrCode,
+      'category': category,
+      'isAvailableForCommunity': isAvailableForCommunity,
+      'allowedBorrowers': allowedBorrowers,
+      'communityRating': communityRating,
+      'totalCommunityRatings': totalCommunityRatings,
+      'ownerId': ownerId,
+      'ownerName': ownerName,
+      'requiresApproval': requiresApproval,
+      'location': location,
+      'condition': condition,
+      'lastMaintenanceDate': Timestamp.fromDate(lastMaintenanceDate),
+      'maintenanceNotes': maintenanceNotes,
+    };
+  }
 
-  factory Tool.fromJson(Map<String, dynamic> json) => Tool(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        imagePath: json['imagePath'] as String?,
-        brand: json['brand'] as String?,
-        isBorrowed: json['isBorrowed'] as bool,
-        returnDate: json['returnDate'] == null
-            ? null
-            : DateTime.parse(json['returnDate'] as String),
-        borrowedBy: json['borrowedBy'] as String?,
-        borrowHistory: (json['borrowHistory'] as List<dynamic>?)
-                ?.map((e) => BorrowHistory.fromJson(e as Map<String, dynamic>))
-                .toList() ??
-            [],
-        borrowerPhone: json['borrowerPhone'] as String?,
-        borrowerEmail: json['borrowerEmail'] as String?,
-        notes: json['notes'] as String?,
-        qrCode: json['qrCode'] as String?,
-        category: json['category'] as String?,
-      );
+  factory Tool.fromMap(Map<String, dynamic> map) {
+    AppLogger.debug('Creating Tool from map:');
+    AppLogger.debug('Map type: ${map.runtimeType}');
+    AppLogger.debug('Map keys: ${map.keys.join(', ')}');
+    AppLogger.debug('Map values: ${map.values.join(', ')}');
+
+    // Check specific fields
+    AppLogger.debug('name field: ${map['name']} (${map['name']?.runtimeType})');
+    AppLogger.debug(
+        'ownerId field: ${map['ownerId']} (${map['ownerId']?.runtimeType})');
+    AppLogger.debug(
+        'ownerName field: ${map['ownerName']} (${map['ownerName']?.runtimeType})');
+
+    // Validate required fields
+    if (map['name'] == null || map['name'].toString().isEmpty) {
+      AppLogger.warning('Tool name is missing or empty');
+    }
+    if (map['ownerId'] == null || map['ownerId'].toString().isEmpty) {
+      AppLogger.warning('Tool ownerId is missing or empty');
+    }
+    if (map['ownerName'] == null || map['ownerName'].toString().isEmpty) {
+      AppLogger.warning('Tool ownerName is missing or empty');
+    }
+
+    return Tool(
+      id: map['id'] as String? ?? map['documentId'] as String? ?? '',
+      name: map['name'] as String? ?? 'Unnamed Tool',
+      imagePath: map['imagePath'] as String?,
+      brand: map['brand'] as String?,
+      isBorrowed: map['isBorrowed'] as bool? ?? false,
+      returnDate: map['returnDate'] != null
+          ? (map['returnDate'] as Timestamp).toDate()
+          : null,
+      borrowedBy: map['borrowedBy'] as String?,
+      borrowHistory: List<BorrowHistory>.from(
+          map['borrowHistory']?.map((x) => BorrowHistory.fromMap(x)) ?? []),
+      borrowerPhone: map['borrowerPhone'] as String?,
+      borrowerEmail: map['borrowerEmail'] as String?,
+      notes: map['notes'] as String?,
+      qrCode: map['qrCode'] as String?,
+      category: map['category'] as String?,
+      isAvailableForCommunity: map['isAvailableForCommunity'] as bool? ?? false,
+      allowedBorrowers: List<String>.from(map['allowedBorrowers'] ?? []),
+      communityRating: (map['communityRating'] as num?)?.toDouble() ?? 0.0,
+      totalCommunityRatings: map['totalCommunityRatings'] as int? ?? 0,
+      ownerId: map['ownerId'] as String? ?? 'unknown',
+      ownerName: map['ownerName'] as String? ?? 'Unknown Owner',
+      requiresApproval: map['requiresApproval'] as bool? ?? true,
+      location: map['location'] as String?,
+      condition: map['condition'] as String?,
+      lastMaintenanceDate: map['lastMaintenanceDate'] != null
+          ? (map['lastMaintenanceDate'] as Timestamp).toDate()
+          : DateTime.now(),
+      maintenanceNotes: map['maintenanceNotes'] as String?,
+    );
+  }
+
+  Tool copyWith({
+    String? id,
+    String? name,
+    String? imagePath,
+    String? brand,
+    bool? isBorrowed,
+    DateTime? returnDate,
+    String? borrowedBy,
+    List<BorrowHistory>? borrowHistory,
+    String? borrowerPhone,
+    String? borrowerEmail,
+    String? notes,
+    String? qrCode,
+    String? category,
+    bool? isAvailableForCommunity,
+    List<String>? allowedBorrowers,
+    double? communityRating,
+    int? totalCommunityRatings,
+    String? ownerId,
+    String? ownerName,
+    bool? requiresApproval,
+    String? location,
+    String? condition,
+    DateTime? lastMaintenanceDate,
+    String? maintenanceNotes,
+  }) {
+    return Tool(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      imagePath: imagePath ?? this.imagePath,
+      brand: brand ?? this.brand,
+      isBorrowed: isBorrowed ?? this.isBorrowed,
+      returnDate: returnDate ?? this.returnDate,
+      borrowedBy: borrowedBy ?? this.borrowedBy,
+      borrowHistory: borrowHistory ?? this.borrowHistory,
+      borrowerPhone: borrowerPhone ?? this.borrowerPhone,
+      borrowerEmail: borrowerEmail ?? this.borrowerEmail,
+      notes: notes ?? this.notes,
+      qrCode: qrCode ?? this.qrCode,
+      category: category ?? this.category,
+      isAvailableForCommunity:
+          isAvailableForCommunity ?? this.isAvailableForCommunity,
+      allowedBorrowers: allowedBorrowers ?? this.allowedBorrowers,
+      communityRating: communityRating ?? this.communityRating,
+      totalCommunityRatings:
+          totalCommunityRatings ?? this.totalCommunityRatings,
+      ownerId: ownerId ?? this.ownerId,
+      ownerName: ownerName ?? this.ownerName,
+      requiresApproval: requiresApproval ?? this.requiresApproval,
+      location: location ?? this.location,
+      condition: condition ?? this.condition,
+      lastMaintenanceDate: lastMaintenanceDate ?? this.lastMaintenanceDate,
+      maintenanceNotes: maintenanceNotes ?? this.maintenanceNotes,
+    );
+  }
 
   // Firestore conversion
   Map<String, dynamic> toFirestore() => {
@@ -85,27 +216,55 @@ class Tool {
         'notes': notes,
         'qrCode': qrCode,
         'category': category,
+        'isAvailableForCommunity': isAvailableForCommunity,
+        'allowedBorrowers': allowedBorrowers,
+        'communityRating': communityRating,
+        'totalCommunityRatings': totalCommunityRatings,
+        'ownerId': ownerId,
+        'ownerName': ownerName,
+        'requiresApproval': requiresApproval,
+        'location': location,
+        'condition': condition,
+        'lastMaintenanceDate': Timestamp.fromDate(lastMaintenanceDate),
+        'maintenanceNotes': maintenanceNotes,
       };
 
   factory Tool.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot,
       SnapshotOptions? options) {
     final data = snapshot.data();
+    if (data == null) {
+      throw Exception('Document data is null');
+    }
     return Tool(
       id: snapshot.id, // Get ID from DocumentSnapshot
-      name: data?['name'] as String,
-      imagePath: data?['imagePath'] as String?,
-      brand: data?['brand'] as String?,
-      isBorrowed: data?['isBorrowed'] as bool,
-      returnDate: data?['returnDate'] == null
+      name: data['name'] as String? ?? '',
+      imagePath: data['imagePath'] as String?,
+      brand: data['brand'] as String?,
+      isBorrowed: data['isBorrowed'] as bool? ?? false,
+      returnDate: data['returnDate'] == null
           ? null
-          : (data?['returnDate'] as Timestamp).toDate(),
-      borrowedBy: data?['borrowedBy'] as String?,
+          : (data['returnDate'] as Timestamp).toDate(),
+      borrowedBy: data['borrowedBy'] as String?,
       // borrowHistory will be loaded separately from its subcollection
-      borrowerPhone: data?['borrowerPhone'] as String?,
-      borrowerEmail: data?['borrowerEmail'] as String?,
-      notes: data?['notes'] as String?,
-      qrCode: data?['qrCode'] as String?,
-      category: data?['category'] as String?,
+      borrowerPhone: data['borrowerPhone'] as String?,
+      borrowerEmail: data['borrowerEmail'] as String?,
+      notes: data['notes'] as String?,
+      qrCode: data['qrCode'] as String?,
+      category: data['category'] as String?,
+      isAvailableForCommunity:
+          data['isAvailableForCommunity'] as bool? ?? false,
+      allowedBorrowers: List<String>.from(data['allowedBorrowers'] ?? []),
+      communityRating: (data['communityRating'] as num?)?.toDouble() ?? 0.0,
+      totalCommunityRatings: data['totalCommunityRatings'] as int? ?? 0,
+      ownerId: data['ownerId'] as String? ?? '',
+      ownerName: data['ownerName'] as String? ?? '',
+      requiresApproval: data['requiresApproval'] as bool? ?? true,
+      location: data['location'] as String?,
+      condition: data['condition'] as String?,
+      lastMaintenanceDate: data['lastMaintenanceDate'] != null
+          ? (data['lastMaintenanceDate'] as Timestamp).toDate()
+          : DateTime.now(),
+      maintenanceNotes: data['maintenanceNotes'] as String?,
       borrowHistory: [], // Initialize as empty, will be populated from subcollection
     );
   }
@@ -134,31 +293,35 @@ class BorrowHistory {
     this.notes,
   });
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'borrowerId': borrowerId,
-        'borrowerName': borrowerName,
-        'borrowerPhone': borrowerPhone,
-        'borrowerEmail': borrowerEmail,
-        'borrowDate': borrowDate.toIso8601String(),
-        'dueDate': dueDate.toIso8601String(),
-        'returnDate': returnDate?.toIso8601String(),
-        'notes': notes,
-      };
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'borrowerId': borrowerId,
+      'borrowerName': borrowerName,
+      'borrowerPhone': borrowerPhone,
+      'borrowerEmail': borrowerEmail,
+      'borrowDate': borrowDate.toIso8601String(),
+      'dueDate': dueDate.toIso8601String(),
+      'returnDate': returnDate?.toIso8601String(),
+      'notes': notes,
+    };
+  }
 
-  factory BorrowHistory.fromJson(Map<String, dynamic> json) => BorrowHistory(
-        id: json['id'] as String,
-        borrowerId: json['borrowerId'] as String,
-        borrowerName: json['borrowerName'] as String,
-        borrowerPhone: json['borrowerPhone'] as String?,
-        borrowerEmail: json['borrowerEmail'] as String?,
-        borrowDate: DateTime.parse(json['borrowDate'] as String),
-        dueDate: DateTime.parse(json['dueDate'] as String),
-        returnDate: json['returnDate'] == null
-            ? null
-            : DateTime.parse(json['returnDate'] as String),
-        notes: json['notes'] as String?,
-      );
+  factory BorrowHistory.fromMap(Map<String, dynamic> map) {
+    return BorrowHistory(
+      id: map['id'] as String,
+      borrowerId: map['borrowerId'] as String,
+      borrowerName: map['borrowerName'] as String,
+      borrowerPhone: map['borrowerPhone'] as String?,
+      borrowerEmail: map['borrowerEmail'] as String?,
+      borrowDate: DateTime.parse(map['borrowDate'] as String),
+      dueDate: DateTime.parse(map['dueDate'] as String),
+      returnDate: map['returnDate'] == null
+          ? null
+          : DateTime.parse(map['returnDate'] as String),
+      notes: map['notes'] as String?,
+    );
+  }
 
   // Firestore conversion
   Map<String, dynamic> toFirestore() => {
@@ -191,6 +354,30 @@ class BorrowHistory {
           ? null
           : (data?['returnDate'] as Timestamp).toDate(),
       notes: data?['notes'] as String?,
+    );
+  }
+
+  BorrowHistory copyWith({
+    String? id,
+    String? borrowerId,
+    String? borrowerName,
+    String? borrowerPhone,
+    String? borrowerEmail,
+    DateTime? borrowDate,
+    DateTime? dueDate,
+    DateTime? returnDate,
+    String? notes,
+  }) {
+    return BorrowHistory(
+      id: id ?? this.id,
+      borrowerId: borrowerId ?? this.borrowerId,
+      borrowerName: borrowerName ?? this.borrowerName,
+      borrowerPhone: borrowerPhone ?? this.borrowerPhone,
+      borrowerEmail: borrowerEmail ?? this.borrowerEmail,
+      borrowDate: borrowDate ?? this.borrowDate,
+      dueDate: dueDate ?? this.dueDate,
+      returnDate: returnDate ?? this.returnDate,
+      notes: notes ?? this.notes,
     );
   }
 }

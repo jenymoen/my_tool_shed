@@ -22,7 +22,7 @@ class LanguageSelector extends StatelessWidget {
           value: const Locale('en'),
           child: Row(
             children: [
-              Flag.fromString(
+              const Flag.fromString(
                 'US',
                 height: 20,
                 width: 30,
@@ -37,7 +37,7 @@ class LanguageSelector extends StatelessWidget {
           value: const Locale('es'),
           child: Row(
             children: [
-              Flag.fromString(
+              const Flag.fromString(
                 'ES',
                 height: 20,
                 width: 30,
@@ -52,7 +52,7 @@ class LanguageSelector extends StatelessWidget {
           value: const Locale('fr'),
           child: Row(
             children: [
-              Flag.fromString(
+              const Flag.fromString(
                 'FR',
                 height: 20,
                 width: 30,
@@ -67,7 +67,7 @@ class LanguageSelector extends StatelessWidget {
           value: const Locale('no'),
           child: Row(
             children: [
-              Flag.fromString(
+              const Flag.fromString(
                 'NO',
                 height: 20,
                 width: 30,

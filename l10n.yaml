@@ -1,4 +1,6 @@
 arb-dir: lib/l10n
 template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
-output-class: AppLocalizations 
+output-class: AppLocalizations
+preferred-supported-locales: [en, es, fr, nb]
+use-deferred-loading: false 
