@@ -39,7 +39,9 @@ class ToolCard extends StatelessWidget {
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
                         return Container(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           child: Center(
                             child: CircularProgressIndicator(
                               value: loadingProgress.expectedTotalBytes != null
@@ -54,7 +56,9 @@ class ToolCard extends StatelessWidget {
                         AppLogger.error(
                             'Error loading image', error, stackTrace);
                         return Container(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           child: Icon(
                             Icons.build,
                             size: 48,
@@ -64,7 +68,8 @@ class ToolCard extends StatelessWidget {
                       },
                     )
                   : Container(
-                      color: Theme.of(context).colorScheme.surfaceVariant,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: Icon(
                         Icons.build,
                         size: 48,

@@ -136,9 +136,7 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
                   );
                 } catch (e) {
                   if (!mounted) return;
-                  if (!dialogContext.mounted) return;
-
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Error updating profile: $e')),
                   );
                 }
@@ -155,7 +153,6 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
   Widget build(BuildContext context) {
     final communityService = CommunityService();
     final isCurrentUser = widget.member.id == widget.currentUserId;
-    final isTrusted = widget.member.trustedBy.contains(widget.currentUserId);
 
     return Scaffold(
       appBar: AppBar(
@@ -167,53 +164,58 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
               onPressed: () => _showEditMemberDialog(context),
             ),
           if (!isCurrentUser)
-            IconButton(
-              icon: Icon(
-                isTrusted ? Icons.verified : Icons.verified_outlined,
-                color: isTrusted ? Colors.green : Colors.white,
-                size: isTrusted ? 28 : 24,
-              ),
-              style: IconButton.styleFrom(
-                backgroundColor:
-                    isTrusted ? Colors.white.withOpacity(0.2) : null,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () async {
-                try {
-                  if (isTrusted) {
-                    await communityService.removeTrust(
-                        widget.currentUserId, widget.member.id);
-                    if (mounted) {
+            StreamBuilder<CommunityMember>(
+              stream: communityService.getMemberStream(widget.member.id),
+              builder: (context, snapshot) {
+                final isTrusted =
+                    snapshot.data?.trustedBy.contains(widget.currentUserId) ??
+                        false;
+                return IconButton(
+                  icon: Icon(
+                    isTrusted ? Icons.verified : Icons.verified_outlined,
+                    color: Colors.white,
+                    size: isTrusted ? 28 : 24,
+                  ),
+                  style: IconButton.styleFrom(
+                    backgroundColor:
+                        isTrusted ? Colors.white.withAlpha(51) : null,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () async {
+                    try {
+                      if (isTrusted) {
+                        await communityService.removeTrust(
+                            widget.currentUserId, widget.member.id);
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content:
+                                  Text('Member removed from trusted network')),
+                        );
+                      } else {
+                        await communityService.addTrust(
+                            widget.currentUserId, widget.member.id);
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Member added to trusted network')),
+                        );
+                      }
+                    } catch (e) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content:
-                                Text('Member removed from trusted network')),
+                        SnackBar(
+                            content: Text('Error updating trust status: $e')),
                       );
                     }
-                  } else {
-                    await communityService.addTrust(
-                        widget.currentUserId, widget.member.id);
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Member added to trusted network')),
-                      );
-                    }
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text('Error updating trust status: $e')),
-                    );
-                  }
-                }
+                  },
+                  tooltip: isTrusted
+                      ? 'Remove from trusted network'
+                      : 'Add to trusted network',
+                );
               },
-              tooltip: isTrusted
-                  ? 'Remove from trusted network'
-                  : 'Add to trusted network',
             ),
         ],
       ),

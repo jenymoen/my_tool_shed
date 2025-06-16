@@ -88,9 +88,9 @@ class _ToolsPageState extends State<ToolsPage> {
     if (tool.isBorrowed && tool.returnDate != null) {
       final daysUntilDue = tool.returnDate!.difference(now).inDays;
       if (daysUntilDue < 0) {
-        return (l10n.overdueBy(daysUntilDue.abs()), Colors.red);
+        return (l10n.overdueBy(daysUntilDue.abs().toString()), Colors.red);
       } else if (daysUntilDue <= 7) {
-        return (l10n.dueIn(daysUntilDue), Colors.orange);
+        return (l10n.dueIn(daysUntilDue.toString()), Colors.orange);
       }
     }
     return (tool.isBorrowed ? l10n.borrowed : l10n.available, Colors.green);
@@ -243,7 +243,9 @@ class _ToolsPageState extends State<ToolsPage> {
                         width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -453,7 +455,9 @@ class _ToolsPageState extends State<ToolsPage> {
                         width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
-                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),

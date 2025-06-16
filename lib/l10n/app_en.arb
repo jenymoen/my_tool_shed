@@ -1,175 +1,691 @@
 {
     "@@locale": "en",
+    "@appTitle": {
+        "description": "The title of the application"
+    },
     "appTitle": "My Tool Shed",
+    "@dashboard": {
+        "description": "Label for the dashboard screen"
+    },
     "dashboard": "Dashboard",
+    "@allTools": {
+        "description": "Label for all tools section"
+    },
     "allTools": "All Tools",
+    "@profile": {
+        "description": "Label for the profile screen"
+    },
     "profile": "Profile",
+    "@logout": {
+        "description": "Label for logout action"
+    },
     "logout": "Logout",
+    "@borrowTool": {
+        "description": "Label for borrowing a tool"
+    },
     "borrowTool": "Borrow Tool",
+    "@returnTool": {
+        "description": "Label for returning a tool"
+    },
     "returnTool": "Return Tool",
+    "@selectToolToBorrow": {
+        "description": "Label for tool selection"
+    },
     "selectToolToBorrow": "Select Tool to Borrow",
+    "@borrowerName": {
+        "description": "Label for borrower name field"
+    },
     "borrowerName": "Borrower Name",
+    "@phoneNumber": {
+        "description": "Label for phone number field"
+    },
     "phoneNumber": "Phone Number",
+    "@email": {
+        "description": "Label for email field"
+    },
     "email": "Email",
+    "@startDate": {
+        "description": "Label for start date field"
+    },
     "startDate": "Start Date",
+    "@returnDate": {
+        "description": "Label for return date field"
+    },
     "returnDate": "Return Date",
+    "@borrowNotes": {
+        "description": "Label for borrow notes field"
+    },
     "borrowNotes": "Borrow Notes",
+    "@returnNotes": {
+        "description": "Label for return notes field"
+    },
     "returnNotes": "Return Notes",
+    "@viewBorrowHistory": {
+        "description": "Label for viewing borrow history"
+    },
     "viewBorrowHistory": "View Borrow History",
+    "@cancel": {
+        "description": "Label for cancel action"
+    },
     "cancel": "Cancel",
+    "@markAsBorrowed": {
+        "description": "Label for marking tool as borrowed"
+    },
     "markAsBorrowed": "Mark as Borrowed",
+    "@markAsReturned": {
+        "description": "Label for marking tool as returned"
+    },
     "markAsReturned": "Mark as Returned",
+    "@noToolsAvailable": {
+        "description": "Message shown when no tools are available"
+    },
     "noToolsAvailable": "No tools are borrowed out.",
+    "@scanToolQRCode": {
+        "description": "Label for scanning tool QR code"
+    },
     "scanToolQRCode": "Scan Tool QR Code",
+    "@positionQRCode": {
+        "description": "Instruction for positioning QR code"
+    },
     "positionQRCode": "Position QR code within frame",
+    "@overdue": {
+        "description": "Label for overdue status"
+    },
     "overdue": "Overdue",
+    "@dueSoon": {
+        "description": "Label for due soon status"
+    },
     "dueSoon": "Due Soon",
+    "@otherBorrowedItems": {
+        "description": "Label for other borrowed items section"
+    },
     "otherBorrowedItems": "Other Borrowed Items",
+    "@days": {
+        "placeholders": {
+            "count": {
+                "type": "num"
+            }
+        }
+    },
     "days": "{count, plural, =0{0 days} =1{1 day} other{{count} days}}",
-    "overdueBy": "Overdue by {days}",
-    "dueIn": "Due in {days}",
+    "@brand": {
+        "placeholders": {
+            "brand": {
+                "type": "String"
+            }
+        }
+    },
     "brand": "Brand: {brand}",
+    "@overdueBy": {
+        "placeholders": {
+            "days": {
+                "type": "String"
+            }
+        }
+    },
+    "overdueBy": "Overdue by {days}",
+    "@dueIn": {
+        "placeholders": {
+            "days": {
+                "type": "String"
+            }
+        }
+    },
+    "dueIn": "Due in {days}",
+    "@borrowedBy": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "borrowedBy": "Borrowed by: {name}",
+    "@returnBy": {
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
     "returnBy": "Return by: {date}",
+    "@selectStartDate": {
+        "description": "Label for selecting start date"
+    },
     "selectStartDate": "Select start date",
+    "@selectReturnDate": {
+        "description": "Label for selecting return date"
+    },
     "selectReturnDate": "Select return date",
+    "@enterBorrowerName": {
+        "description": "Label for entering borrower name"
+    },
     "enterBorrowerName": "Enter borrower's name",
+    "@enterBorrowerPhone": {
+        "description": "Label for entering borrower phone"
+    },
     "enterBorrowerPhone": "Enter borrower's phone",
+    "@enterBorrowerEmail": {
+        "description": "Label for entering borrower email"
+    },
     "enterBorrowerEmail": "Enter borrower's email",
+    "@addBorrowNotes": {
+        "description": "Label for adding borrow notes"
+    },
     "addBorrowNotes": "Add notes about the borrow",
+    "@addReturnNotes": {
+        "description": "Label for adding return notes"
+    },
     "addReturnNotes": "Add notes about the return",
+    "@language": {
+        "description": "Label for language selection"
+    },
     "language": "Language",
+    "@english": {
+        "description": "Label for English language"
+    },
     "english": "English",
+    "@spanish": {
+        "description": "Label for Spanish language"
+    },
     "spanish": "Spanish",
+    "@french": {
+        "description": "Label for French language"
+    },
     "french": "French",
+    "@norwegian": {
+        "description": "Label for Norwegian language"
+    },
     "norwegian": "Norwegian",
+    "@settings": {
+        "description": "Label for settings screen"
+    },
     "settings": "Settings",
+    "@noToolsYet": {
+        "description": "Message shown when no tools exist"
+    },
     "noToolsYet": "No tools yet. Add some!",
+    "@borrowed": {
+        "description": "Label for borrowed status"
+    },
     "borrowed": "Borrowed",
+    "@available": {
+        "description": "Label for available status"
+    },
     "available": "Available",
+    "@community": {
+        "description": "Label for community section"
+    },
     "community": "Community",
+    "@addAllowedBorrowers": {
+        "description": "Label for adding allowed borrowers"
+    },
     "addAllowedBorrowers": "Add Allowed Borrowers",
+    "@searchCommunityMembers": {
+        "description": "Label for searching community members"
+    },
     "searchCommunityMembers": "Search community members...",
+    "@noMembersFound": {
+        "description": "Message shown when no members are found"
+    },
     "noMembersFound": "No members found",
+    "@addBorrower": {
+        "description": "Label for adding a borrower"
+    },
     "addBorrower": "Add Borrower",
+    "@done": {
+        "description": "Label for done action"
+    },
     "done": "Done",
+    "@communitySharingSettings": {
+        "description": "Label for community sharing settings"
+    },
     "communitySharingSettings": "Community Sharing Settings",
+    "@requireApproval": {
+        "description": "Label for requiring approval"
+    },
     "requireApproval": "Require Approval",
+    "@requireApprovalDescription": {
+        "description": "Description for requiring approval"
+    },
     "requireApprovalDescription": "Approve each borrow request before allowing the tool to be borrowed",
+    "@allowedBorrowers": {
+        "description": "Label for allowed borrowers section"
+    },
     "allowedBorrowers": "Allowed Borrowers",
+    "@allCommunityMembersCanBorrow": {
+        "description": "Message indicating all community members can borrow"
+    },
     "allCommunityMembersCanBorrow": "All community members can borrow this tool",
+    "@makeAvailable": {
+        "description": "Label for making tool available"
+    },
     "makeAvailable": "Make Available",
+    "@toolAvailableForCommunity": {
+        "description": "Message indicating tool is available for community"
+    },
     "toolAvailableForCommunity": "Tool is now available for community sharing",
+    "@failedToUpdateSettings": {
+        "description": "Error message for failed settings update"
+    },
     "failedToUpdateSettings": "Failed to update sharing settings",
+    "@noPermissionToUpdate": {
+        "description": "Error message for no permission to update"
+    },
     "noPermissionToUpdate": "You do not have permission to update this tool",
+    "@toolNotFound": {
+        "description": "Error message for tool not found"
+    },
     "toolNotFound": "Tool not found in database",
+    "@networkError": {
+        "description": "Error message for network issues"
+    },
     "networkError": "Network error. Please check your connection",
+    "@dismiss": {
+        "description": "Label for dismiss action"
+    },
     "dismiss": "Dismiss",
+    "@owner": {
+        "description": "Label for owner field"
+    },
     "owner": "Owner",
+    "@location": {
+        "description": "Label for location field"
+    },
     "location": "Location",
+    "@condition": {
+        "description": "Label for condition field"
+    },
     "condition": "Condition",
+    "@lastMaintenance": {
+        "description": "Label for last maintenance field"
+    },
     "lastMaintenance": "Last Maintenance",
+    "@maintenanceNotes": {
+        "description": "Label for maintenance notes field"
+    },
     "maintenanceNotes": "Maintenance Notes",
+    "@ratingsAndReviews": {
+        "description": "Label for ratings and reviews section"
+    },
     "ratingsAndReviews": "Ratings & Reviews",
+    "@noRatingsYet": {
+        "description": "Message shown when no ratings exist"
+    },
     "noRatingsYet": "No ratings yet",
+    "@requestToBorrow": {
+        "description": "Label for requesting to borrow"
+    },
     "requestToBorrow": "Request to Borrow",
+    "@availableForCommunity": {
+        "description": "Label for community availability"
+    },
     "availableForCommunity": "Available for Community",
+    "@borrowRequestsRequireApproval": {
+        "description": "Message indicating borrow requests need approval"
+    },
     "borrowRequestsRequireApproval": "Borrow requests require approval",
+    "@openForImmediateBorrowing": {
+        "description": "Message indicating immediate borrowing is available"
+    },
     "openForImmediateBorrowing": "Open for immediate borrowing",
+    "@borrowRequestSubmitted": {
+        "description": "Message shown when borrow request is submitted"
+    },
     "borrowRequestSubmitted": "Borrow request submitted",
+    "@communityTitle": {
+        "description": "Title for community section"
+    },
     "communityTitle": "Community",
+    "@members": {
+        "description": "Label for members section"
+    },
     "members": "Members",
+    "@tools": {
+        "description": "Label for tools section"
+    },
     "tools": "Tools",
+    "@trustNetwork": {
+        "description": "Label for trust network section"
+    },
     "trustNetwork": "Trust Network",
+    "@recommendations": {
+        "description": "Label for recommendations section"
+    },
     "recommendations": "Recommendations",
+    "@addTrustedMember": {
+        "description": "Label for adding trusted member"
+    },
     "addTrustedMember": "Add Trusted Member",
+    "@nameRequired": {
+        "description": "Error message for required name"
+    },
     "nameRequired": "Name is required",
+    "@addMember": {
+        "description": "Label for adding member"
+    },
     "addMember": "Add Member",
-    "errorAddingMember": "Error adding member: {error}",
+    "@sortByRating": {
+        "description": "Label for sorting by rating"
+    },
     "sortByRating": "Sort by Rating",
+    "@sortByName": {
+        "description": "Label for sorting by name"
+    },
     "sortByName": "Sort by Name",
+    "@sortByBrand": {
+        "description": "Label for sorting by brand"
+    },
     "sortByBrand": "Sort by Brand",
+    "@retry": {
+        "description": "Label for retry action"
+    },
     "retry": "Retry",
+    "@toolAvailableForSharing": {
+        "description": "Message indicating tool is available for sharing"
+    },
     "toolAvailableForSharing": "Tool is now available for community sharing",
+    "@removeFromCommunity": {
+        "description": "Label for removing from community"
+    },
     "removeFromCommunity": "Remove from Community",
+    "@toolRemovedFromSharing": {
+        "description": "Message indicating tool is removed from sharing"
+    },
     "toolRemovedFromSharing": "Tool removed from community sharing",
+    "@remove": {
+        "description": "Label for remove action"
+    },
     "remove": "Remove",
+    "@noTrustedMembers": {
+        "description": "Message shown when no trusted members exist"
+    },
     "noTrustedMembers": "No trusted members yet",
+    "@noMembersTrustYou": {
+        "description": "Message shown when no members trust you"
+    },
     "noMembersTrustYou": "No members trust you yet",
+    "@errorLoadingTools": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
     "errorLoadingTools": "Error loading tools: {error}",
-    "errorLoadingRatings": "Error loading ratings: {error}",
-    "errorLoadingMembers": "Error loading members: {error}",
-    "errorLoadingTrustNetwork": "Error loading trust network: {error}",
-    "errorLoadingProfile": "Error loading profile: {error}",
-    "errorLoadingRecommendations": "Error loading recommendations: {error}",
+    "@name": {
+        "description": "Label for name field"
+    },
     "name": "Name",
+    "@addTrustedMembersToStartBuildingYourCommunity": {
+        "description": "Message encouraging adding trusted members"
+    },
     "addTrustedMembersToStartBuildingYourCommunity": "Add trusted members to start building your community",
+    "@tryAdjustingSearchOrFilters": {
+        "description": "Message suggesting to adjust search or filters"
+    },
     "tryAdjustingSearchOrFilters": "Try adjusting your search or filters",
+    "@noToolsFound": {
+        "description": "Message shown when no tools are found"
+    },
     "noToolsFound": "No tools found",
+    "@searchTools": {
+        "description": "Label for searching tools"
+    },
     "searchTools": "Search tools...",
+    "@filterTools": {
+        "description": "Label for filtering tools"
+    },
     "filterTools": "Filter tools",
+    "@sortTools": {
+        "description": "Label for sorting tools"
+    },
     "sortTools": "Sort tools",
+    "@viewTools": {
+        "description": "Label for viewing tools"
+    },
     "viewTools": "View tools",
+    "@listView": {
+        "description": "Label for list view"
+    },
     "listView": "List View",
+    "@gridView": {
+        "description": "Label for grid view"
+    },
     "gridView": "Grid View",
-    "allTools": "All Tools",
+    "@availableTools": {
+        "description": "Label for available tools section"
+    },
     "availableTools": "Available Tools",
+    "@borrowedTools": {
+        "description": "Label for borrowed tools section"
+    },
     "borrowedTools": "Borrowed Tools",
+    "@myTools": {
+        "description": "Label for my tools section"
+    },
     "myTools": "My Tools",
+    "@communityTools": {
+        "description": "Label for community tools section"
+    },
     "communityTools": "Community Tools",
+    "@recommendedTools": {
+        "description": "Label for recommended tools section"
+    },
     "recommendedTools": "Recommended Tools",
+    "@popularTools": {
+        "description": "Label for popular tools section"
+    },
     "popularTools": "Popular Tools",
+    "@recentTools": {
+        "description": "Label for recent tools section"
+    },
     "recentTools": "Recent Tools",
+    "@favoriteTools": {
+        "description": "Label for favorite tools section"
+    },
     "favoriteTools": "Favorite Tools",
+    "@toolCategories": {
+        "description": "Label for tool categories section"
+    },
     "toolCategories": "Tool Categories",
+    "@toolBrands": {
+        "description": "Label for tool brands section"
+    },
     "toolBrands": "Tool Brands",
+    "@toolConditions": {
+        "description": "Label for tool conditions section"
+    },
     "toolConditions": "Tool Conditions",
+    "@toolStatus": {
+        "description": "Label for tool status section"
+    },
     "toolStatus": "Tool Status",
+    "@toolLocation": {
+        "description": "Label for tool location section"
+    },
     "toolLocation": "Tool Location",
+    "@toolOwner": {
+        "description": "Label for tool owner section"
+    },
     "toolOwner": "Tool Owner",
+    "@toolBorrower": {
+        "description": "Label for tool borrower section"
+    },
     "toolBorrower": "Tool Borrower",
+    "@toolReturnDate": {
+        "description": "Label for tool return date section"
+    },
     "toolReturnDate": "Tool Return Date",
+    "@toolBorrowDate": {
+        "description": "Label for tool borrow date section"
+    },
     "toolBorrowDate": "Tool Borrow Date",
+    "@toolDescription": {
+        "description": "Label for tool description section"
+    },
     "toolDescription": "Tool Description",
+    "@toolInstructions": {
+        "description": "Label for tool instructions section"
+    },
     "toolInstructions": "Tool Instructions",
+    "@toolWarnings": {
+        "description": "Label for tool warnings section"
+    },
     "toolWarnings": "Tool Warnings",
+    "@toolMaintenance": {
+        "description": "Label for tool maintenance section"
+    },
     "toolMaintenance": "Tool Maintenance",
+    "@toolHistory": {
+        "description": "Label for tool history section"
+    },
     "toolHistory": "Tool History",
+    "@toolReviews": {
+        "description": "Label for tool reviews section"
+    },
     "toolReviews": "Tool Reviews",
+    "@toolRatings": {
+        "description": "Label for tool ratings section"
+    },
     "toolRatings": "Tool Ratings",
+    "@toolComments": {
+        "description": "Label for tool comments section"
+    },
     "toolComments": "Tool Comments",
+    "@toolPhotos": {
+        "description": "Label for tool photos section"
+    },
     "toolPhotos": "Tool Photos",
+    "@toolDocuments": {
+        "description": "Label for tool documents section"
+    },
     "toolDocuments": "Tool Documents",
+    "@toolLinks": {
+        "description": "Label for tool links section"
+    },
     "toolLinks": "Tool Links",
+    "@toolTags": {
+        "description": "Label for tool tags section"
+    },
     "toolTags": "Tool Tags",
+    "@toolNotes": {
+        "description": "Label for tool notes section"
+    },
     "toolNotes": "Tool Notes",
+    "@toolPrice": {
+        "description": "Label for tool price section"
+    },
     "toolPrice": "Tool Price",
+    "@toolValue": {
+        "description": "Label for tool value section"
+    },
     "toolValue": "Tool Value",
+    "@toolInsurance": {
+        "description": "Label for tool insurance section"
+    },
     "toolInsurance": "Tool Insurance",
+    "@toolWarranty": {
+        "description": "Label for tool warranty section"
+    },
     "toolWarranty": "Tool Warranty",
+    "@toolSerialNumber": {
+        "description": "Label for tool serial number section"
+    },
     "toolSerialNumber": "Tool Serial Number",
+    "@toolModelNumber": {
+        "description": "Label for tool model number section"
+    },
     "toolModelNumber": "Tool Model Number",
+    "@toolManufacturer": {
+        "description": "Label for tool manufacturer section"
+    },
     "toolManufacturer": "Tool Manufacturer",
+    "@toolYear": {
+        "description": "Label for tool year section"
+    },
     "toolYear": "Tool Year",
+    "@toolPurchaseDate": {
+        "description": "Label for tool purchase date section"
+    },
     "toolPurchaseDate": "Tool Purchase Date",
+    "@toolPurchasePrice": {
+        "description": "Label for tool purchase price section"
+    },
     "toolPurchasePrice": "Tool Purchase Price",
+    "@toolPurchaseLocation": {
+        "description": "Label for tool purchase location section"
+    },
     "toolPurchaseLocation": "Tool Purchase Location",
+    "@toolPurchaseReceipt": {
+        "description": "Label for tool purchase receipt section"
+    },
     "toolPurchaseReceipt": "Tool Purchase Receipt",
+    "@toolPurchaseWarranty": {
+        "description": "Label for tool purchase warranty section"
+    },
     "toolPurchaseWarranty": "Tool Purchase Warranty",
+    "@toolPurchaseInsurance": {
+        "description": "Label for tool purchase insurance section"
+    },
     "toolPurchaseInsurance": "Tool Purchase Insurance",
+    "@toolPurchaseNotes": {
+        "description": "Label for tool purchase notes section"
+    },
     "toolPurchaseNotes": "Tool Purchase Notes",
+    "@toolPurchasePhotos": {
+        "description": "Label for tool purchase photos section"
+    },
     "toolPurchasePhotos": "Tool Purchase Photos",
+    "@toolPurchaseDocuments": {
+        "description": "Label for tool purchase documents section"
+    },
     "toolPurchaseDocuments": "Tool Purchase Documents",
+    "@toolPurchaseLinks": {
+        "description": "Label for tool purchase links section"
+    },
     "toolPurchaseLinks": "Tool Purchase Links",
+    "@toolPurchaseTags": {
+        "description": "Label for tool purchase tags section"
+    },
     "toolPurchaseTags": "Tool Purchase Tags",
+    "@dateFormat": {
+        "description": "Label for date format"
+    },
     "dateFormat": "dd/MM/yyyy",
+    "@dateFormatDescription": {
+        "description": "Description of date format"
+    },
     "dateFormatDescription": "Date format used throughout the app",
+    "@login": {
+        "description": "Label for login action"
+    },
     "login": "Login",
+    "@signUp": {
+        "description": "Label for sign up action"
+    },
     "signUp": "Sign Up",
+    "@password": {
+        "description": "Label for password field"
+    },
     "password": "Password",
+    "@forgotPassword": {
+        "description": "Label for forgot password action"
+    },
     "forgotPassword": "Forgot Password?",
+    "@resetPassword": {
+        "description": "Label for reset password action"
+    },
     "resetPassword": "Reset Password",
+    "@sendResetLink": {
+        "description": "Label for sending reset link"
+    },
     "sendResetLink": "Send Reset Link",
+    "@passwordResetEmailSent": {
+        "description": "Message shown when password reset email is sent"
+    },
     "passwordResetEmailSent": "Password reset email sent. Please check your inbox.",
+    "@signInWithGoogle": {
+        "description": "Label for signing in with Google"
+    },
     "signInWithGoogle": "Sign in with Google"
 } 

@@ -13,7 +13,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
+// import 'package:firebase_app_check/firebase_app_check.dart';
 // import 'dart:io';
 //import 'package:path/path.dart' as path;
 import 'package:logging/logging.dart';
@@ -158,7 +158,7 @@ void main() async {
         final firestore = FirebaseFirestore.instance;
         _logger.info('Firebase Firestore initialized');
 
-        final storage = FirebaseStorage.instance;
+        FirebaseStorage.instance;
         _logger.info('Firebase Storage initialized');
       } catch (e, stackTrace) {
         _logger.warning(

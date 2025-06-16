@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:intl/intl.dart';
 import 'package:my_tool_shed/models/community_member.dart';
 import 'package:my_tool_shed/models/tool.dart';
 import 'package:my_tool_shed/services/auth_service.dart';
@@ -191,7 +190,7 @@ class DashboardPageState extends State<DashboardPage>
 
       // Use test ad unit ID in debug mode
       const bool isDebug = true; // Set this based on your build configuration
-      final String adUnitId = isDebug ? _testAdUnitId : _prodAdUnitId;
+      const String adUnitId = isDebug ? _testAdUnitId : _prodAdUnitId;
 
       _bannerAd = BannerAd(
         adUnitId: adUnitId,
@@ -305,6 +304,7 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.home),
             title: Text(l10n.dashboard),
             onTap: () {
+              debugPrint('Debug - Dashboard - Navigating to Dashboard');
               Navigator.pop(context);
             },
           ),
@@ -312,8 +312,9 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.build),
             title: Text(l10n.allTools),
             onTap: () {
+              debugPrint('Debug - Dashboard - Navigating to Tools Page');
               Navigator.pop(context);
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ToolsPage(
@@ -327,6 +328,7 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.people),
             title: Text(l10n.community),
             onTap: () {
+              debugPrint('Debug - Dashboard - Navigating to Community Page');
               Navigator.pop(context);
               Navigator.push(
                 context,
@@ -340,10 +342,13 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.person),
             title: Text(l10n.profile),
             onTap: () {
+              debugPrint('Debug - Dashboard - Navigating to Profile Page');
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ProfilePage()),
+                MaterialPageRoute(
+                  builder: (context) => const ProfilePage(),
+                ),
               );
             },
           ),
@@ -353,6 +358,7 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.settings),
             title: Text(l10n.settings),
             onTap: () {
+              debugPrint('Debug - Dashboard - Navigating to Settings Page');
               Navigator.pop(context);
               Navigator.push(
                 context,
@@ -368,6 +374,7 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.logout),
             title: Text(l10n.logout),
             onTap: () async {
+              debugPrint('Debug - Dashboard - Logging out');
               final navigator = Navigator.of(context);
               Navigator.pop(context);
               await AuthService().signOut();
@@ -519,7 +526,7 @@ class DashboardPageState extends State<DashboardPage>
               Text(l10n.brand(tool.brand!)),
             Text(l10n.borrowedBy(tool.borrowedBy ?? 'N/A')),
             if (tool.returnDate != null)
-              Text(l10n.returnBy(DateFormatter.format(tool.returnDate!))),
+              Text('Return by: ${DateFormatter.format(tool.returnDate!)}'),
           ],
         ),
         trailing: IconButton(
@@ -556,8 +563,9 @@ class DashboardPageState extends State<DashboardPage>
         context: context,
         barrierDismissible: true,
         builder: (BuildContext dialogContext) {
-          return WillPopScope(
-            onWillPop: () async => true,
+          return PopScope(
+            canPop: true,
+            onPopInvokedWithResult: (didPop, result) {},
             child: AlertDialog(
               title:
                   Text(AppLocalizations.of(dialogContext)!.selectToolToBorrow),
@@ -669,7 +677,7 @@ class DashboardPageState extends State<DashboardPage>
               if (!mounted) return;
               List<BorrowHistory> historyToShow =
                   await _firestoreService.getBorrowHistoryStream(tool.id).first;
-              if (!mounted) return;
+              if (!dialogContext.mounted) return;
 
               showDialog(
                 context: dialogContext,
@@ -819,8 +827,9 @@ class DashboardPageState extends State<DashboardPage>
               }
             }
 
-            return WillPopScope(
-              onWillPop: () async => false,
+            return PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) {},
               child: AlertDialog(
                 title: Text(isBorrowing
                     ? 'Borrow Tool: ${tool.name}'

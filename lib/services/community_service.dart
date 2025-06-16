@@ -281,12 +281,26 @@ class CommunityService {
 
       // If the tool is not available for community, delete it from the community collection
       if (!tool.isAvailableForCommunity) {
-        await communityToolRef.delete();
-        AppLogger.info('Tool removed from community collection');
+        try {
+          await communityToolRef.delete();
+          AppLogger.info('Tool removed from community collection');
+        } catch (e) {
+          AppLogger.error(
+              'Error removing tool from community collection', e, null);
+          throw Exception(
+              'Failed to remove tool from community sharing: ${e.toString()}');
+        }
       } else {
         // If the tool is available for community, update it in the community collection
-        await communityToolRef.set(updateData, SetOptions(merge: true));
-        AppLogger.info('Tool updated in community collection');
+        try {
+          await communityToolRef.set(updateData, SetOptions(merge: true));
+          AppLogger.info('Tool updated in community collection');
+        } catch (e) {
+          AppLogger.error(
+              'Error updating tool in community collection', e, null);
+          throw Exception(
+              'Failed to update tool in community sharing: ${e.toString()}');
+        }
       }
 
       // Verify the update

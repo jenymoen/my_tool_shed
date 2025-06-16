@@ -23,7 +23,14 @@ class _CommunityPageState extends State<CommunityPage>
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    print('Debug - CommunityPage - Current User ID: $_currentUserId');
+    debugPrint('Debug - CommunityPage - Current User ID: $_currentUserId');
+    debugPrint('Debug - CommunityPage - Initializing...');
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    debugPrint('Debug - CommunityPage - Dependencies changed');
   }
 
   @override
@@ -35,36 +42,34 @@ class _CommunityPageState extends State<CommunityPage>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    debugPrint('Debug - CommunityPage - Building...');
 
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.communityTitle),
-          bottom: TabBar(
-            controller: _tabController,
-            labelColor: Colors.white,
-            unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
-            indicatorColor: Colors.white,
-            tabs: [
-              Tab(text: l10n.members),
-              Tab(text: l10n.tools),
-              Tab(text: l10n.trustNetwork),
-              Tab(text: l10n.recommendations),
-            ],
-          ),
-        ),
-        body: TabBarView(
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.communityTitle),
+        bottom: TabBar(
           controller: _tabController,
-          children: [
-            CommunityMembersPage(
-              currentUserId: _currentUserId,
-            ),
-            const CommunityToolsPage(),
-            const TrustNetworkPage(),
-            const ToolRecommendationsPage(),
+          labelColor: Colors.white,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurface,
+          indicatorColor: Colors.white,
+          tabs: [
+            Tab(text: l10n.members),
+            Tab(text: l10n.tools),
+            Tab(text: l10n.trustNetwork),
+            Tab(text: l10n.recommendations),
           ],
         ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          CommunityMembersPage(
+            currentUserId: _currentUserId,
+          ),
+          const CommunityToolsPage(),
+          const TrustNetworkPage(),
+          const ToolRecommendationsPage(),
+        ],
       ),
     );
   }

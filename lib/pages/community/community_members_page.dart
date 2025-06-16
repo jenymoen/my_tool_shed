@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_tool_shed/models/community_member.dart';
 import 'package:my_tool_shed/services/community_service.dart';
-import 'package:my_tool_shed/widgets/community/member_card.dart';
 import 'package:my_tool_shed/pages/community/member_profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_tool_shed/utils/logger.dart';
 
 class CommunityMembersPage extends StatefulWidget {
   final String currentUserId;
@@ -252,9 +252,9 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
 
   Widget _buildMemberCard(CommunityMember member) {
     final isCurrentUser = member.id == widget.currentUserId;
-    print('Debug - Current User ID: ${widget.currentUserId}');
-    print('Debug - Member ID: ${member.id}');
-    print('Debug - Is Current User: $isCurrentUser');
+    AppLogger.debug('Current User ID: ${widget.currentUserId}');
+    AppLogger.debug('Member ID: ${member.id}');
+    AppLogger.debug('Is Current User: $isCurrentUser');
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -271,6 +271,20 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // if (member.isActive)
+            //   Container(
+            //     margin: const EdgeInsets.only(right: 8),
+            //     padding: const EdgeInsets.all(4),
+            //     decoration: const BoxDecoration(
+            //       color: Colors.black,
+            //       shape: BoxShape.circle,
+            //     ),
+            //     child: const Icon(
+            //       Icons.check,
+            //       color: Colors.green,
+            //       size: 16,
+            //     ),
+            //   ),
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () => _showEditMemberDialog(context, member),

@@ -5,8 +5,6 @@ import 'package:my_tool_shed/services/community_service.dart';
 import 'package:my_tool_shed/widgets/community/tool_card.dart';
 import 'package:my_tool_shed/pages/community/tool_details_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shimmer/shimmer.dart';
-import 'package:my_tool_shed/utils/logger.dart';
 
 class CommunityToolsPage extends StatefulWidget {
   const CommunityToolsPage({super.key});
@@ -20,60 +18,6 @@ class _CommunityToolsPageState extends State<CommunityToolsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _sortBy = 'rating'; // Default sort by rating
-  bool _isLoading = false;
-  String? _error;
-
-  Widget _buildShimmerLoading() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 3,
-      itemBuilder: (context, index) {
-        return Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
-          child: Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: Container(
-              height: 120,
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          height: 20,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          width: 100,
-                          height: 16,
-                          color: Colors.white,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   List<Tool> _filterAndSortTools(List<Tool> tools) {
     // Filter tools based on search query
@@ -124,13 +68,11 @@ class _CommunityToolsPageState extends State<CommunityToolsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(l10n.errorLoadingTools(snapshot.error.toString())),
+                  Text('Error loading tools: ${snapshot.error}'),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {
-                        _error = null;
-                      });
+                      setState(() {});
                     },
                     child: Text(l10n.retry),
                   ),
