@@ -15,6 +15,7 @@ import 'package:my_tool_shed/pages/settings_page.dart';
 import 'package:my_tool_shed/pages/community/community_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_tool_shed/utils/date_formatter.dart';
+import 'package:my_tool_shed/utils/logger.dart';
 
 class DashboardPage extends StatefulWidget {
   final Function(Locale) onLocaleChanged;
@@ -136,7 +137,7 @@ class DashboardPageState extends State<DashboardPage>
 
     try {
       final initializationStatus = await MobileAds.instance.initialize();
-      debugPrint('Initialization status: $initializationStatus');
+      AppLogger.info('Mobile Ads SDK initialized: $initializationStatus');
 
       if (mounted) {
         setState(() {
@@ -145,7 +146,7 @@ class DashboardPageState extends State<DashboardPage>
         _initBannerAd();
       }
     } catch (e) {
-      debugPrint('Error initializing MobileAds: $e');
+      AppLogger.error('Error initializing MobileAds', e, null);
       if (mounted) {
         setState(() {
           _isAdInitialized = false;
@@ -198,27 +199,24 @@ class DashboardPageState extends State<DashboardPage>
         request: const AdRequest(),
         listener: BannerAdListener(
           onAdLoaded: (ad) {
-            debugPrint('Ad loaded successfully');
-            if (!mounted) return;
-            setState(() {
-              _isAdLoaded = true;
-            });
+            AppLogger.info('Ad loaded successfully');
+            _bannerAd = ad as BannerAd;
+            setState(() {});
           },
           onAdFailedToLoad: (ad, error) {
-            debugPrint('Ad failed to load: $error');
+            AppLogger.error('Ad failed to load', error, null);
             ad.dispose();
-            _disposeAd();
           },
-          onAdOpened: (ad) => debugPrint('Ad opened'),
-          onAdClosed: (ad) => debugPrint('Ad closed'),
-          onAdImpression: (ad) => debugPrint('Ad impression'),
-          onAdClicked: (ad) => debugPrint('Ad clicked'),
+          onAdOpened: (ad) => AppLogger.info('Ad opened'),
+          onAdClosed: (ad) => AppLogger.info('Ad closed'),
+          onAdImpression: (ad) => AppLogger.info('Ad impression'),
+          onAdClicked: (ad) => AppLogger.info('Ad clicked'),
         ),
       );
 
       _bannerAd?.load();
     } catch (e) {
-      debugPrint('Error initializing ad: $e');
+      AppLogger.error('Error initializing ad', e, null);
       _disposeAd();
     }
   }
@@ -304,7 +302,6 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.home),
             title: Text(l10n.dashboard),
             onTap: () {
-              debugPrint('Debug - Dashboard - Navigating to Dashboard');
               Navigator.pop(context);
             },
           ),
@@ -312,7 +309,6 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.build),
             title: Text(l10n.allTools),
             onTap: () {
-              debugPrint('Debug - Dashboard - Navigating to Tools Page');
               Navigator.pop(context);
               Navigator.push(
                 context,
@@ -328,7 +324,6 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.people),
             title: Text(l10n.community),
             onTap: () {
-              debugPrint('Debug - Dashboard - Navigating to Community Page');
               Navigator.pop(context);
               Navigator.push(
                 context,
@@ -342,7 +337,6 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.person),
             title: Text(l10n.profile),
             onTap: () {
-              debugPrint('Debug - Dashboard - Navigating to Profile Page');
               Navigator.pop(context);
               Navigator.push(
                 context,
@@ -358,7 +352,6 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.settings),
             title: Text(l10n.settings),
             onTap: () {
-              debugPrint('Debug - Dashboard - Navigating to Settings Page');
               Navigator.pop(context);
               Navigator.push(
                 context,
@@ -374,7 +367,6 @@ class DashboardPageState extends State<DashboardPage>
             leading: const Icon(Icons.logout),
             title: Text(l10n.logout),
             onTap: () async {
-              debugPrint('Debug - Dashboard - Logging out');
               final navigator = Navigator.of(context);
               Navigator.pop(context);
               await AuthService().signOut();

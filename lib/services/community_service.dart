@@ -57,7 +57,7 @@ class CommunityService {
             .update(member.toMap());
       }
     } catch (e) {
-      print('Error updating community member: $e');
+      AppLogger.error('Error updating community member', e, null);
       rethrow;
     }
   }

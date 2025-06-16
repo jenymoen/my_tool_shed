@@ -23,14 +23,11 @@ class _CommunityPageState extends State<CommunityPage>
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
-    debugPrint('Debug - CommunityPage - Current User ID: $_currentUserId');
-    debugPrint('Debug - CommunityPage - Initializing...');
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    debugPrint('Debug - CommunityPage - Dependencies changed');
   }
 
   @override
@@ -42,7 +39,6 @@ class _CommunityPageState extends State<CommunityPage>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    debugPrint('Debug - CommunityPage - Building...');
 
     return Scaffold(
       appBar: AppBar(
