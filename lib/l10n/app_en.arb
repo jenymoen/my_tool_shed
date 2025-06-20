@@ -687,5 +687,41 @@
     "@signInWithGoogle": {
         "description": "Label for signing in with Google"
     },
-    "signInWithGoogle": "Sign in with Google"
+    "signInWithGoogle": "Sign in with Google",
+    "@versionNotes": {
+        "description": "Version notes for the current release"
+    },
+    "versionNotes": "Version 2.1.0 - AdMob Integration & UI Improvements",
+    "@versionNotesDetails": {
+        "description": "Detailed version notes for the current release"
+    },
+    "versionNotesDetails": "• Added comprehensive AdMob banner ads across all major pages\n• Implemented reusable AdBannerWidget for consistent ad display\n• Added ads to Dashboard, Tools, Community, Profile, and Settings pages\n• Centralized ad configuration with AdConstants for easy management\n• Fixed Android app signing configuration for Google Play Store\n• Improved app drawer navigation consistency across all pages\n• Enhanced user experience with non-intrusive ad placement\n• Optimized app bundle size and performance\n• All ads configured for production revenue generation",
+    "@whatsNew": {
+        "description": "Label for what's new section"
+    },
+    "whatsNew": "What's New",
+    "@adMobIntegration": {
+        "description": "Label for AdMob integration feature"
+    },
+    "adMobIntegration": "AdMob Integration",
+    "@adMobDescription": {
+        "description": "Description of AdMob integration"
+    },
+    "adMobDescription": "Banner ads now appear on all major pages to support app development",
+    "@uiImprovements": {
+        "description": "Label for UI improvements"
+    },
+    "uiImprovements": "UI Improvements",
+    "@uiImprovementsDescription": {
+        "description": "Description of UI improvements"
+    },
+    "uiImprovementsDescription": "Enhanced navigation consistency and user experience across all pages",
+    "@bugFixes": {
+        "description": "Label for bug fixes"
+    },
+    "bugFixes": "Bug Fixes",
+    "@bugFixesDescription": {
+        "description": "Description of bug fixes"
+    },
+    "bugFixesDescription": "Fixed Android app signing issues and navigation inconsistencies"
 } 

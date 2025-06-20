@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '2.0.0'
+    ext.kotlin_version = '2.1.0'
     ext.agp_version = '8.3.0'
 
     repositories {
@@ -7,8 +7,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.3.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.android.tools.build:gradle:8.4.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0"
         classpath 'com.google.gms:google-services:4.4.0'
         classpath 'com.google.gms:google-services:4.4.1'
     }
@@ -30,6 +30,7 @@ allprojects {
     configurations.all {
         resolutionStrategy {
             force 'org.bouncycastle:bcprov-jdk18on:1.76'
+            force "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
         }
     }
 } 

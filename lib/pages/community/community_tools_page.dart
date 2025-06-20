@@ -5,6 +5,8 @@ import 'package:my_tool_shed/services/community_service.dart';
 import 'package:my_tool_shed/widgets/community/tool_card.dart';
 import 'package:my_tool_shed/pages/community/tool_details_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../widgets/ad_banner_widget.dart';
+import '../../utils/ad_constants.dart';
 
 class CommunityToolsPage extends StatefulWidget {
   const CommunityToolsPage({super.key});
@@ -165,6 +167,13 @@ class _CommunityToolsPageState extends State<CommunityToolsPage> {
                       },
                     );
                   },
+                ),
+              ),
+              AdBannerWidget(
+                adUnitId: AdConstants.getAdUnitId(
+                  AdConstants.communityBannerAdUnitId,
+                  isDebug:
+                      false, // Set to true for test ads, false for production
                 ),
               ),
             ],

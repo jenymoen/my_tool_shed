@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_tool_shed/services/auth_service.dart';
+import '../widgets/ad_banner_widget.dart';
+import '../utils/ad_constants.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -62,64 +64,78 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('My Profile')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (_currentUser?.photoURL != null)
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: NetworkImage(_currentUser!.photoURL!),
-                    child: _currentUser!.photoURL == null
-                        ? const Icon(Icons.person, size: 50)
-                        : null,
-                  ),
-                if (_currentUser?.photoURL == null)
-                  const CircleAvatar(
-                    radius: 50,
-                    child: Icon(Icons.person, size: 50),
-                  ),
-                const SizedBox(height: 20),
-                Text(
-                  'Email: ${_currentUser?.email ?? 'Not available'}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your full name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ElevatedButton.icon(
-                        icon: const Icon(Icons.save),
-                        label: const Text('Save Profile'),
-                        onPressed: _updateProfile,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      if (_currentUser?.photoURL != null)
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundImage:
+                              NetworkImage(_currentUser!.photoURL!),
+                          child: _currentUser!.photoURL == null
+                              ? const Icon(Icons.person, size: 50)
+                              : null,
                         ),
+                      if (_currentUser?.photoURL == null)
+                        const CircleAvatar(
+                          radius: 50,
+                          child: Icon(Icons.person, size: 50),
+                        ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Email: ${_currentUser?.email ?? 'Not available'}',
+                        style: Theme.of(context).textTheme.titleMedium,
+                        textAlign: TextAlign.center,
                       ),
-              ],
+                      const SizedBox(height: 24),
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person_outline),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your full name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton.icon(
+                              icon: const Icon(Icons.save),
+                              label: const Text('Save Profile'),
+                              onPressed: _updateProfile,
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16.0),
+                              ),
+                            ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+          AdBannerWidget(
+            adUnitId: AdConstants.getAdUnitId(
+              AdConstants.profileBannerAdUnitId,
+              isDebug: false, // Set to true for test ads, false for production
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -19,6 +19,9 @@ import 'package:my_tool_shed/pages/community/tool_details_page.dart'; // Added f
 // import 'package:my_tool_shed/widgets/language_selector.dart'; // Added for LanguageSelector
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added for AppLocalizations
 import 'package:my_tool_shed/services/storage_service.dart';
+import 'package:my_tool_shed/widgets/app_drawer.dart';
+import 'package:my_tool_shed/widgets/ad_banner_widget.dart';
+import 'package:my_tool_shed/utils/ad_constants.dart';
 
 class ToolsPage extends StatefulWidget {
   final Function(Locale) onLocaleChanged;
@@ -33,52 +36,30 @@ class ToolsPage extends StatefulWidget {
 }
 
 class _ToolsPageState extends State<ToolsPage> {
-  BannerAd? _bannerAd;
-  bool _isAdLoaded = false;
   final FirestoreService _firestoreService = FirestoreService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
+  String? _selectedBrand;
   final List<String> _brandOptions = [
-    'Bosch',
-    'Makita',
     'DeWalt',
     'Milwaukee',
+    'Makita',
+    'Bosch',
     'Ryobi',
-    'Stanley',
+    'Black+Decker',
     'Craftsman',
+    'Husky',
+    'Kobalt',
+    'Ridgid',
     'Other'
   ];
-  String? _selectedBrand;
 
   @override
   void initState() {
     super.initState();
-    _initBannerAd();
-  }
-
-  void _initBannerAd() {
-    _bannerAd = BannerAd(
-      adUnitId:
-          'ca-app-pub-5326232965412305~2242713432', // Replace with your Ad Unit ID
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          setState(() {
-            _isAdLoaded = true;
-          });
-        },
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-        },
-      ),
-    );
-    _bannerAd?.load();
   }
 
   @override
   void dispose() {
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -614,141 +595,19 @@ class _ToolsPageState extends State<ToolsPage> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
-    final currentUser = AuthService().currentUser;
-    String displayName = currentUser?.displayName ?? 'User';
-    if (displayName.isEmpty) {
-      displayName = 'User';
-    }
-    final l10n = AppLocalizations.of(context)!;
-
-    return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: <Widget>[
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  l10n.appTitle,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Hi, $displayName',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: Text(l10n.dashboard),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DashboardPage(
-                    onLocaleChanged: widget.onLocaleChanged,
-                  ),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.build),
-            title: Text(l10n.allTools),
-            onTap: () {
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: Text(l10n.community),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CommunityPage(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: Text(l10n.profile),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfilePage(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.settings),
-            title: Text(l10n.settings),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => SettingsPage(
-                    onLocaleChanged: widget.onLocaleChanged,
-                  ),
-                ),
-              );
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: Text(l10n.logout),
-            onTap: () async {
-              final navigator = Navigator.of(context);
-              await AuthService().signOut();
-              if (context.mounted) {
-                navigator.pushReplacement(
-                  MaterialPageRoute(
-                    builder: (context) => const LoginPage(),
-                  ),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.allTools),
+        title: Text(l10n.allTools),
         leading: IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => _scaffoldKey.currentState?.openDrawer()),
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
       ),
-      drawer: _buildDrawer(context),
+      drawer: AppDrawer(onLocaleChanged: widget.onLocaleChanged),
       body: Column(
         children: [
           Expanded(
@@ -775,19 +634,12 @@ class _ToolsPageState extends State<ToolsPage> {
               },
             ),
           ),
-          if (_isAdLoaded)
-            Container(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 20.0, bottom: 125.0),
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  height: _bannerAd?.size.height.toDouble(),
-                  width: _bannerAd?.size.width.toDouble(),
-                  child: AdWidget(ad: _bannerAd!),
-                ),
-              ),
+          AdBannerWidget(
+            adUnitId: AdConstants.getAdUnitId(
+              AdConstants.toolsBannerAdUnitId,
+              isDebug: false, // Set to true for test ads, false for production
             ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(

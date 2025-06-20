@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_tool_shed/widgets/language_selector.dart';
+import '../widgets/ad_banner_widget.dart';
+import '../utils/ad_constants.dart';
 
 class SettingsPage extends StatelessWidget {
   final Function(Locale) onLocaleChanged;
@@ -18,15 +20,27 @@ class SettingsPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.settings),
       ),
-      body: ListView(
+      body: Column(
         children: [
-          ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(l10n.language),
-            trailing: LanguageSelector(onLocaleChanged: onLocaleChanged),
+          Expanded(
+            child: ListView(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(l10n.language),
+                  trailing: LanguageSelector(onLocaleChanged: onLocaleChanged),
+                ),
+                const Divider(),
+                // Add more settings here as needed
+              ],
+            ),
           ),
-          const Divider(),
-          // Add more settings here as needed
+          AdBannerWidget(
+            adUnitId: AdConstants.getAdUnitId(
+              AdConstants.settingsBannerAdUnitId,
+              isDebug: false, // Set to true for test ads, false for production
+            ),
+          ),
         ],
       ),
     );

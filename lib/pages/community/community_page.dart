@@ -5,6 +5,8 @@ import 'package:my_tool_shed/pages/community/community_tools_page.dart';
 import 'package:my_tool_shed/pages/community/trust_network_page.dart';
 import 'package:my_tool_shed/pages/community/tool_recommendations_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../widgets/ad_banner_widget.dart';
+import '../../utils/ad_constants.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -56,15 +58,27 @@ class _CommunityPageState extends State<CommunityPage>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          CommunityMembersPage(
-            currentUserId: _currentUserId,
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                CommunityMembersPage(
+                  currentUserId: _currentUserId,
+                ),
+                const CommunityToolsPage(),
+                const TrustNetworkPage(),
+                const ToolRecommendationsPage(),
+              ],
+            ),
           ),
-          const CommunityToolsPage(),
-          const TrustNetworkPage(),
-          const ToolRecommendationsPage(),
+          AdBannerWidget(
+            adUnitId: AdConstants.getAdUnitId(
+              AdConstants.communityBannerAdUnitId,
+              isDebug: false, // Set to true for test ads, false for production
+            ),
+          ),
         ],
       ),
     );
