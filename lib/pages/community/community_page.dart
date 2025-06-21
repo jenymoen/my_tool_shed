@@ -7,9 +7,15 @@ import 'package:my_tool_shed/pages/community/tool_recommendations_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/ad_banner_widget.dart';
 import '../../utils/ad_constants.dart';
+import '../../widgets/app_drawer.dart';
 
 class CommunityPage extends StatefulWidget {
-  const CommunityPage({super.key});
+  final Function(Locale) onLocaleChanged;
+
+  const CommunityPage({
+    super.key,
+    required this.onLocaleChanged,
+  });
 
   @override
   State<CommunityPage> createState() => _CommunityPageState();
@@ -19,6 +25,7 @@ class _CommunityPageState extends State<CommunityPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late String _currentUserId;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -43,8 +50,13 @@ class _CommunityPageState extends State<CommunityPage>
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: Text(l10n.communityTitle),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
@@ -58,6 +70,7 @@ class _CommunityPageState extends State<CommunityPage>
           ],
         ),
       ),
+      drawer: AppDrawer(onLocaleChanged: widget.onLocaleChanged),
       body: Column(
         children: [
           Expanded(

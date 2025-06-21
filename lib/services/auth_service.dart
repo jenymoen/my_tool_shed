@@ -11,6 +11,11 @@ class AuthService {
   // Get current user
   User? get currentUser => _auth.currentUser;
 
+  // Refresh current user data
+  Future<void> refreshCurrentUser() async {
+    await _auth.currentUser?.reload();
+  }
+
   // Sign up with email and password
   Future<UserCredential?> signUpWithEmailAndPassword(
       String email, String password) async {

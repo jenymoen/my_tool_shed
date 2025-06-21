@@ -204,7 +204,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _loadSavedLocale() async {
     final prefs = await SharedPreferences.getInstance();
     final savedLocale = prefs.getString('locale');
-    if (savedLocale != null) {
+    if (savedLocale != null && mounted) {
       setState(() {
         _locale = Locale(savedLocale);
       });

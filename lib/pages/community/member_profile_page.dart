@@ -20,6 +20,14 @@ class MemberProfilePage extends StatefulWidget {
 }
 
 class _MemberProfilePageState extends State<MemberProfilePage> {
+  ScaffoldMessengerState? _scaffoldMessenger;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scaffoldMessenger = ScaffoldMessenger.of(context);
+  }
+
   void _showEditMemberDialog(BuildContext context) {
     if (!mounted) return;
 
@@ -130,15 +138,10 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
                   if (!dialogContext.mounted) return;
 
                   Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    const SnackBar(
-                        content: Text('Profile updated successfully')),
-                  );
+                  _showSnackBar('Profile updated successfully');
                 } catch (e) {
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error updating profile: $e')),
-                  );
+                  _showSnackBar('Error updating profile: $e');
                 }
               },
               child: const Text('Save'),
@@ -147,6 +150,12 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
         );
       },
     );
+  }
+
+  void _showSnackBar(String message) {
+    if (mounted && _scaffoldMessenger != null) {
+      _scaffoldMessenger!.showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   @override
@@ -189,26 +198,22 @@ class _MemberProfilePageState extends State<MemberProfilePage> {
                         await communityService.removeTrust(
                             widget.currentUserId, widget.member.id);
                         if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content:
-                                  Text('Member removed from trusted network')),
-                        );
+                        if (context.mounted) {
+                          _showSnackBar('Member removed from trusted network');
+                        }
                       } else {
                         await communityService.addTrust(
                             widget.currentUserId, widget.member.id);
                         if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Member added to trusted network')),
-                        );
+                        if (context.mounted) {
+                          _showSnackBar('Member added to trusted network');
+                        }
                       }
                     } catch (e) {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('Error updating trust status: $e')),
-                      );
+                      if (context.mounted) {
+                        _showSnackBar('Error updating trust status: $e');
+                      }
                     }
                   },
                   tooltip: isTrusted

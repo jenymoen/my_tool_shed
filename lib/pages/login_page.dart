@@ -114,85 +114,90 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _showForgotPasswordDialog() async {
     final resetEmailController = TextEditingController();
-    bool isResetting = false;
-    String? resetError;
 
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.resetPassword),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: resetEmailController,
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)!.email,
-                hintText: 'example@email.com',
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            if (resetError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  resetError ?? '',
-                  style: const TextStyle(color: Colors.red),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          bool isResetting = false;
+          String? resetError;
+
+          return AlertDialog(
+            title: Text(AppLocalizations.of(context)!.resetPassword),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: resetEmailController,
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.email,
+                    hintText: 'example@email.com',
+                  ),
+                  keyboardType: TextInputType.emailAddress,
                 ),
+                if (resetError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      resetError,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(AppLocalizations.of(context)!.cancel),
               ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: isResetting
-                ? null
-                : () async {
-                    final email = resetEmailController.text.trim();
-                    if (email.isEmpty) {
-                      setState(() {
-                        resetError = 'Please enter your email address';
-                      });
-                      return;
-                    }
+              TextButton(
+                onPressed: isResetting
+                    ? null
+                    : () async {
+                        final email = resetEmailController.text.trim();
+                        if (email.isEmpty) {
+                          setState(() {
+                            resetError = 'Please enter your email address';
+                          });
+                          return;
+                        }
 
-                    setState(() {
-                      isResetting = true;
-                      resetError = null;
-                    });
+                        setState(() {
+                          isResetting = true;
+                          resetError = null;
+                        });
 
-                    try {
-                      await _authService.sendPasswordResetEmail(email);
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              AppLocalizations.of(context)!
-                                  .passwordResetEmailSent,
-                            ),
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      setState(() {
-                        resetError = e.toString();
-                        isResetting = false;
-                      });
-                    }
-                  },
-            child: isResetting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(AppLocalizations.of(context)!.sendResetLink),
-          ),
-        ],
+                        try {
+                          await _authService.sendPasswordResetEmail(email);
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  AppLocalizations.of(context)!
+                                      .passwordResetEmailSent,
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setState(() {
+                            resetError = e.toString();
+                            isResetting = false;
+                          });
+                        }
+                      },
+                child: isResetting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(AppLocalizations.of(context)!.sendResetLink),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -3,9 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_tool_shed/services/auth_service.dart';
 import '../widgets/ad_banner_widget.dart';
 import '../utils/ad_constants.dart';
+import '../widgets/app_drawer.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final Function(Locale) onLocaleChanged;
+  const ProfilePage({super.key, required this.onLocaleChanged});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -17,6 +19,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController _nameController = TextEditingController();
   User? _currentUser;
   bool _isLoading = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -33,8 +36,8 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _isLoading = true);
       try {
         await _currentUser!.updateDisplayName(_nameController.text.trim());
-        // Refresh the user data locally if needed, though Firebase usually handles this
-        await _currentUser!.reload();
+        // Refresh the user data to ensure changes are reflected
+        await _authService.refreshCurrentUser();
         _currentUser = _authService.currentUser; // Re-fetch to get updated info
 
         if (mounted) {
@@ -63,7 +66,15 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Profile')),
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: const Text('My Profile'),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+        ),
+      ),
+      drawer: AppDrawer(onLocaleChanged: widget.onLocaleChanged),
       body: Column(
         children: [
           Expanded(
