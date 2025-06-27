@@ -295,11 +295,216 @@ class DashboardPageState extends State<DashboardPage>
   }
 
   void _showSelectToolToBorrowDialog(BuildContext pageContext) async {
-    // Implementation of _showSelectToolToBorrowDialog method
+    final l10n = AppLocalizations.of(context)!;
+    final currentUser = _firestoreService.currentUser;
+    final communityService = CommunityService();
+
+    List<Tool> availableTools = [];
+    List<CommunityMember> communityMembers = [];
+    Tool? selectedTool;
+    CommunityMember? selectedBorrower;
+    DateTime? startDate;
+    DateTime? returnDate;
+
+    try {
+      final allTools = await _firestoreService.getToolsStream().first;
+      availableTools = allTools.where((tool) => !tool.isBorrowed).toList();
+      communityMembers = await communityService.getCommunityMembers().first;
+    } catch (e) {
+      if (pageContext.mounted) {
+        ScaffoldMessenger.of(pageContext).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e')),
+        );
+      }
+      return;
+    }
+
+    if (availableTools.isEmpty) {
+      if (pageContext.mounted) {
+        showDialog(
+          context: pageContext,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              title: Text(l10n.borrowTool),
+              content: Text(l10n.noToolsAvailable),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+      return;
+    }
+
+    showDialog(
+      context: pageContext,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> selectDate(bool isStartDate) async {
+              final now = DateTime.now();
+              final DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: (isStartDate ? startDate : returnDate) ?? now,
+                firstDate: now,
+                lastDate: now.add(const Duration(days: 365)),
+              );
+              if (picked != null) {
+                setDialogState(() {
+                  if (isStartDate) {
+                    startDate = picked;
+                    if (returnDate != null &&
+                        returnDate!.isBefore(startDate!)) {
+                      returnDate = null;
+                    }
+                  } else {
+                    returnDate = picked;
+                  }
+                });
+              }
+            }
+
+            return AlertDialog(
+              title: Text(l10n.borrowTool),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<Tool>(
+                      value: selectedTool,
+                      onChanged: (Tool? newValue) {
+                        setDialogState(() {
+                          selectedTool = newValue;
+                        });
+                      },
+                      items: availableTools
+                          .map<DropdownMenuItem<Tool>>((Tool tool) {
+                        return DropdownMenuItem<Tool>(
+                          value: tool,
+                          child: Text(tool.name),
+                        );
+                      }).toList(),
+                      decoration: const InputDecoration(
+                        labelText: 'Select Tool',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Start Date',
+                        style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    OutlinedButton(
+                      onPressed: () => selectDate(true),
+                      child: Text(startDate == null
+                          ? 'Select Date'
+                          : DateFormatter.format(startDate!)),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Return Date',
+                        style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    OutlinedButton(
+                      onPressed:
+                          startDate == null ? null : () => selectDate(false),
+                      child: Text(returnDate == null
+                          ? 'Select Date'
+                          : DateFormatter.format(returnDate!)),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<CommunityMember>(
+                      value: selectedBorrower,
+                      hint: const Text('Choose a borrower'),
+                      onChanged: (CommunityMember? newValue) {
+                        setDialogState(() {
+                          selectedBorrower = newValue;
+                        });
+                      },
+                      items: communityMembers
+                          .map<DropdownMenuItem<CommunityMember>>(
+                              (CommunityMember member) {
+                        return DropdownMenuItem<CommunityMember>(
+                          value: member,
+                          child: Text(member.name),
+                        );
+                      }).toList(),
+                      decoration: const InputDecoration(
+                        labelText: 'Borrower Name',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: (selectedTool != null &&
+                          startDate != null &&
+                          returnDate != null &&
+                          selectedBorrower != null)
+                      ? () async {
+                          try {
+                            final updatedTool = selectedTool!.copyWith(
+                              isBorrowed: true,
+                              borrowedBy: selectedBorrower!.id,
+                              returnDate: returnDate,
+                            );
+                            await _firestoreService.updateTool(updatedTool);
+                            if (dialogContext.mounted) {
+                              Navigator.of(dialogContext).pop();
+                              ScaffoldMessenger.of(pageContext).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      'Successfully borrowed ${selectedTool!.name}'),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (dialogContext.mounted) {
+                              ScaffoldMessenger.of(pageContext).showSnackBar(
+                                SnackBar(
+                                    content: Text('Error borrowing tool: $e')),
+                              );
+                            }
+                          }
+                        }
+                      : null,
+                  child: const Text('Submit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showBorrowReturnDialog(Tool tool, {required bool isBorrowing}) {
-    // Implementation of _showBorrowReturnDialog method
+    // Simple placeholder implementation
+    final l10n = AppLocalizations.of(context)!;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(isBorrowing ? 'Borrow Tool' : 'Return Tool'),
+          content: Text(
+              '${isBorrowing ? 'Borrow' : 'Return'} ${tool.name} functionality coming soon...'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildSelectBorrowerDialog() {

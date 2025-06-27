@@ -2,50 +2,212 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user is authenticated
+    // ===== HELPER FUNCTIONS =====
+    
+    // Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // Helper function to check if user is the owner
-    function isOwner(data) {
-      return isAuthenticated() && request.auth.uid == data.ownerId;
+    // Check if user is the document owner (for user profiles)
+    function isDocumentOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
     
-    // Allow authenticated users to read and write tool ratings
-    match /tool_ratings/{ratingId} {
+    // Validate tool data structure
+    function isValidToolData(data) {
+      return data.keys().hasAll(['name', 'ownerId', 'ownerName']) &&
+             data.name is string &&
+             data.name.size() > 0 &&
+             data.ownerId is string &&
+             data.ownerId.size() > 0 &&
+             data.ownerName is string &&
+             data.ownerName.size() > 0;
+    }
+    
+    // Validate community member data structure
+    function isValidCommunityMemberData(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string &&
+             data.name.size() > 0;
+    }
+    
+    // Validate tool rating data structure
+    function isValidToolRatingData(data) {
+      return data.keys().hasAll(['toolId', 'raterId', 'raterName', 'borrowerId', 'borrowerName', 'rating']) &&
+             data.toolId is string &&
+             data.raterId is string &&
+             data.raterName is string &&
+             data.borrowerId is string &&
+             data.borrowerName is string &&
+             data.rating is number &&
+             data.rating >= 0.0 &&
+             data.rating <= 5.0;
+    }
+    
+    // ===== USER PROFILES =====
+    match /users/{userId} {
+      // Anyone can read user profiles (for community features)
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && 
-        (request.auth.uid == resource.data.raterId || 
+      
+      // Users can only write their own profile
+      allow create, update: if isDocumentOwner(userId) && 
+        isValidCommunityMemberData(request.resource.data);
+      
+      // Users can only delete their own profile
+      allow delete: if isDocumentOwner(userId);
+      
+      // ===== USER TOOLS (Subcollection) =====
+      match /tools/{toolId} {
+        // Users can read their own tools
+        allow read: if isDocumentOwner(userId);
+        
+        // Users can create tools in their own collection
+        allow create: if isDocumentOwner(userId) && 
+          isValidToolData(request.resource.data) &&
+          request.resource.data.ownerId == userId;
+        
+        // Users can update their own tools
+        allow update: if isDocumentOwner(userId) && 
+          isValidToolData(request.resource.data) &&
+          request.resource.data.ownerId == userId;
+        
+        // Users can delete their own tools
+        allow delete: if isDocumentOwner(userId);
+        
+        // ===== BORROW HISTORY (Subcollection of tools) =====
+        match /borrowHistory/{historyId} {
+          // Users can read borrow history for their own tools
+          allow read: if isDocumentOwner(userId);
+          
+          // Users can create borrow history for their own tools
+          allow create: if isDocumentOwner(userId) &&
+            request.resource.data.keys().hasAll(['borrowerId', 'borrowerName', 'borrowDate', 'dueDate']) &&
+            request.resource.data.borrowerId is string &&
+            request.resource.data.borrowerName is string &&
+            request.resource.data.borrowDate is timestamp &&
+            request.resource.data.dueDate is timestamp;
+          
+          // Users can update borrow history for their own tools
+          allow update: if isDocumentOwner(userId) &&
+            request.resource.data.keys().hasAll(['borrowerId', 'borrowerName', 'borrowDate', 'dueDate']) &&
+            request.resource.data.borrowerId is string &&
+            request.resource.data.borrowerName is string &&
+            request.resource.data.borrowDate is timestamp &&
+            request.resource.data.dueDate is timestamp;
+          
+          // Users can delete borrow history for their own tools
+          allow delete: if isDocumentOwner(userId);
+        }
+      }
+    }
+    
+    // ===== COMMUNITY TOOLS =====
+    match /tools/{toolId} {
+      // Anyone can read community-available tools
+      allow read: if isAuthenticated();
+      
+      // Only tool owners can create community tools
+      allow create: if isAuthenticated() && 
+        isValidToolData(request.resource.data) &&
+        request.auth.uid == request.resource.data.ownerId &&
+        request.resource.data.isAvailableForCommunity == true;
+      
+      // Only tool owners can update community tools
+      allow update: if isAuthenticated() && 
+        isValidToolData(request.resource.data) &&
+        request.auth.uid == request.resource.data.ownerId &&
+        request.resource.data.isAvailableForCommunity == true;
+      
+      // Only tool owners can delete community tools
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.ownerId;
+    }
+    
+    // ===== COMMUNITY MEMBERS =====
+    match /community_members/{memberId} {
+      // Anyone can read community member profiles
+      allow read: if isAuthenticated();
+      
+      // Users can create/update their own community member profile
+      allow create, update: if isDocumentOwner(memberId) && 
+        isValidCommunityMemberData(request.resource.data);
+      
+      // Users can delete their own community member profile
+      allow delete: if isDocumentOwner(memberId);
+    }
+    
+    // ===== TOOL RATINGS =====
+    match /tool_ratings/{ratingId} {
+      // Anyone can read tool ratings
+      allow read: if isAuthenticated();
+      
+      // Users can create ratings for tools they've borrowed
+      allow create: if isAuthenticated() && 
+        isValidToolRatingData(request.resource.data) &&
+        request.auth.uid == request.resource.data.raterId;
+      
+      // Users can update their own ratings
+      allow update: if isAuthenticated() && 
+        isValidToolRatingData(request.resource.data) &&
+        request.auth.uid == request.resource.data.raterId &&
+        request.auth.uid == resource.data.raterId;
+      
+      // Users can delete their own ratings
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.raterId;
+    }
+    
+    // ===== BORROW REQUESTS (if you add this collection later) =====
+    match /borrow_requests/{requestId} {
+      // Users can read requests they're involved in
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == resource.data.borrowerId || 
+         request.auth.uid == resource.data.ownerId);
+      
+      // Users can create borrow requests
+      allow create: if isAuthenticated() && 
+        request.auth.uid == request.resource.data.borrowerId &&
+        request.resource.data.keys().hasAll(['toolId', 'borrowerId', 'ownerId', 'requestDate', 'dueDate']) &&
+        request.resource.data.toolId is string &&
+        request.resource.data.borrowerId is string &&
+        request.resource.data.ownerId is string &&
+        request.resource.data.requestDate is timestamp &&
+        request.resource.data.dueDate is timestamp;
+      
+      // Users can update requests they're involved in
+      allow update: if isAuthenticated() && 
+        (request.auth.uid == request.resource.data.borrowerId || 
+         request.auth.uid == request.resource.data.ownerId);
+      
+      // Users can delete requests they're involved in
+      allow delete: if isAuthenticated() && 
+        (request.auth.uid == resource.data.borrowerId || 
          request.auth.uid == resource.data.ownerId);
     }
     
-    // Allow authenticated users to read and write tools
-    match /tools/{toolId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        // Allow if user is the owner
-        request.auth.uid == resource.data.ownerId ||
-        // Or if the update only changes sharing settings and user is the owner
-        (request.auth.uid == request.resource.data.ownerId &&
-         request.resource.data.diff(resource.data).affectedKeys()
-           .hasOnly(['isAvailableForCommunity', 'allowedBorrowers', 'requiresApproval']))
-      );
-      allow delete: if isAuthenticated() && request.auth.uid == resource.data.ownerId;
-    }
-    
-    // Allow authenticated users to read and write community members
-    match /community_members/{memberId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == memberId;
-    }
-
-    // Allow authenticated users to read and write user profiles
-    match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && request.auth.uid == userId;
+    // ===== NOTIFICATIONS (if you add this collection later) =====
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // System can create notifications for users
+      allow create: if isAuthenticated() && 
+        request.resource.data.keys().hasAll(['userId', 'type', 'title', 'message', 'createdAt']) &&
+        request.resource.data.userId is string &&
+        request.resource.data.type is string &&
+        request.resource.data.title is string &&
+        request.resource.data.message is string &&
+        request.resource.data.createdAt is timestamp;
+      
+      // Users can update their own notifications (e.g., mark as read)
+      allow update: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+      
+      // Users can delete their own notifications
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
     }
   }
 } 

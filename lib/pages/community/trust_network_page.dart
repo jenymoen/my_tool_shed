@@ -54,47 +54,68 @@ class _TrustedMembersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<CommunityMember>>(
-      stream: communityService.getCommunityMembers(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
+    return StreamBuilder<CommunityMember>(
+      stream: communityService.getMemberStream(currentUserId),
+      builder: (context, currentUserSnapshot) {
+        if (currentUserSnapshot.hasError) {
           return Center(
-            child: Text('Error: ${snapshot.error}'),
+            child: Text('Error: ${currentUserSnapshot.error}'),
           );
         }
 
-        if (!snapshot.hasData) {
+        if (!currentUserSnapshot.hasData) {
           return const Center(
             child: CircularProgressIndicator(),
           );
         }
 
-        final members = snapshot.data!
-            .where((member) => member.trustedBy.contains(currentUserId))
-            .toList();
+        final currentUser = currentUserSnapshot.data!;
 
-        if (members.isEmpty) {
-          return const Center(
-            child: Text('No trusted members yet'),
-          );
-        }
+        // Get all community members to find the ones the current user trusts
+        return StreamBuilder<List<CommunityMember>>(
+          stream: communityService.getCommunityMembers(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('Error: ${snapshot.error}'),
+              );
+            }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: members.length,
-          itemBuilder: (context, index) {
-            final member = members[index];
-            return MemberCard(
-              member: member,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MemberProfilePage(
-                      member: member,
-                      currentUserId: currentUserId,
-                    ),
-                  ),
+            if (!snapshot.hasData) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            // Find members that the current user trusts
+            final trustedMembers = snapshot.data!
+                .where((member) => currentUser.trustedUsers.contains(member.id))
+                .toList();
+
+            if (trustedMembers.isEmpty) {
+              return const Center(
+                child: Text('You haven\'t trusted any members yet'),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: trustedMembers.length,
+              itemBuilder: (context, index) {
+                final member = trustedMembers[index];
+                return MemberCard(
+                  member: member,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MemberProfilePage(
+                          member: member,
+                          currentUserId: currentUserId,
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             );
@@ -116,47 +137,68 @@ class _TrustedByTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<CommunityMember>>(
-      stream: communityService.getCommunityMembers(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
+    return StreamBuilder<CommunityMember>(
+      stream: communityService.getMemberStream(currentUserId),
+      builder: (context, currentUserSnapshot) {
+        if (currentUserSnapshot.hasError) {
           return Center(
-            child: Text('Error: ${snapshot.error}'),
+            child: Text('Error: ${currentUserSnapshot.error}'),
           );
         }
 
-        if (!snapshot.hasData) {
+        if (!currentUserSnapshot.hasData) {
           return const Center(
             child: CircularProgressIndicator(),
           );
         }
 
-        final members = snapshot.data!
-            .where((member) => member.trustedUsers.contains(currentUserId))
-            .toList();
+        final currentUser = currentUserSnapshot.data!;
 
-        if (members.isEmpty) {
-          return const Center(
-            child: Text('No members trust you yet'),
-          );
-        }
+        // Get all community members to find the ones who trust the current user
+        return StreamBuilder<List<CommunityMember>>(
+          stream: communityService.getCommunityMembers(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('Error: ${snapshot.error}'),
+              );
+            }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: members.length,
-          itemBuilder: (context, index) {
-            final member = members[index];
-            return MemberCard(
-              member: member,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => MemberProfilePage(
-                      member: member,
-                      currentUserId: currentUserId,
-                    ),
-                  ),
+            if (!snapshot.hasData) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            // Find members who trust the current user
+            final trustedByMembers = snapshot.data!
+                .where((member) => currentUser.trustedBy.contains(member.id))
+                .toList();
+
+            if (trustedByMembers.isEmpty) {
+              return const Center(
+                child: Text('No members trust you yet'),
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: trustedByMembers.length,
+              itemBuilder: (context, index) {
+                final member = trustedByMembers[index];
+                return MemberCard(
+                  member: member,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => MemberProfilePage(
+                          member: member,
+                          currentUserId: currentUserId,
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             );

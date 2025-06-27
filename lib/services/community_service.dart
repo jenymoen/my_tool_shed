@@ -392,9 +392,20 @@ class CommunityService {
 
   Stream<CommunityMember> getMemberStream(String userId) {
     return _firestore
-        .collection('users')
+        .collection(_communityMembersCollection)
         .doc(userId)
         .snapshots()
-        .map((doc) => CommunityMember.fromFirestore(doc.data()!));
+        .map((doc) {
+      if (!doc.exists) {
+        // Return a default member if document doesn't exist
+        return CommunityMember(
+          id: userId,
+          name: 'Unknown User',
+          trustedBy: [],
+          trustedUsers: [],
+        );
+      }
+      return CommunityMember.fromFirestore(doc.data()!);
+    });
   }
 }
