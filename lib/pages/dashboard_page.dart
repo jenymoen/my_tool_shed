@@ -311,32 +311,32 @@ class DashboardPageState extends State<DashboardPage>
       availableTools = allTools.where((tool) => !tool.isBorrowed).toList();
       communityMembers = await communityService.getCommunityMembers().first;
     } catch (e) {
-      if (pageContext.mounted) {
-        ScaffoldMessenger.of(pageContext).showSnackBar(
-          SnackBar(content: Text('Error loading data: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(pageContext).showSnackBar(
+        SnackBar(content: Text('Error loading data: $e')),
+      );
       return;
     }
 
+    if (!mounted) return;
+
     if (availableTools.isEmpty) {
-      if (pageContext.mounted) {
-        showDialog(
-          context: pageContext,
-          builder: (BuildContext dialogContext) {
-            return AlertDialog(
-              title: Text(l10n.borrowTool),
-              content: Text(l10n.noToolsAvailable),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          },
-        );
-      }
+      if (!mounted) return;
+      showDialog(
+        context: pageContext,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: Text(l10n.borrowTool),
+            content: Text(l10n.noToolsAvailable),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
       return;
     }
 
@@ -456,22 +456,22 @@ class DashboardPageState extends State<DashboardPage>
                               returnDate: returnDate,
                             );
                             await _firestoreService.updateTool(updatedTool);
-                            if (dialogContext.mounted) {
-                              Navigator.of(dialogContext).pop();
-                              ScaffoldMessenger.of(pageContext).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Successfully borrowed ${selectedTool!.name}'),
-                                ),
-                              );
-                            }
+
+                            if (!mounted) return;
+
+                            Navigator.of(dialogContext).pop();
+                            ScaffoldMessenger.of(pageContext).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Successfully borrowed ${selectedTool!.name}'),
+                              ),
+                            );
                           } catch (e) {
-                            if (dialogContext.mounted) {
-                              ScaffoldMessenger.of(pageContext).showSnackBar(
-                                SnackBar(
-                                    content: Text('Error borrowing tool: $e')),
-                              );
-                            }
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(pageContext).showSnackBar(
+                              SnackBar(
+                                  content: Text('Error borrowing tool: $e')),
+                            );
                           }
                         }
                       : null,
