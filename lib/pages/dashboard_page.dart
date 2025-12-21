@@ -1,18 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:my_tool_shed/models/community_member.dart';
 import 'package:my_tool_shed/models/tool.dart';
-import 'package:my_tool_shed/services/auth_service.dart';
 import 'package:my_tool_shed/services/community_service.dart';
 import 'package:my_tool_shed/services/firestore_service.dart';
 import 'package:my_tool_shed/services/notification_service.dart';
-import 'package:my_tool_shed/pages/tools_page.dart';
-import 'package:my_tool_shed/pages/login_page.dart';
-import 'package:my_tool_shed/pages/profile_page.dart';
-import 'package:my_tool_shed/pages/settings_page.dart';
-import 'package:my_tool_shed/pages/community/community_page.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_tool_shed/utils/date_formatter.dart';
 import 'package:my_tool_shed/utils/logger.dart';
@@ -38,11 +31,6 @@ class DashboardPageState extends State<DashboardPage>
   // bool _isLoading = true; // Replaced by StreamBuilder states
   final FirestoreService _firestoreService = FirestoreService(); // Added
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  // Test ad unit ID for development
-  static const String _testAdUnitId = 'ca-app-pub-3940256099942544/6300978111';
-  // Production ad unit ID
-  static const String _prodAdUnitId = 'ca-app-pub-5326232965412305/9406053435';
 
   List<Tool> _filterBorrowedTools(List<Tool> allTools) {
     if (allTools.isEmpty) return [];
@@ -298,7 +286,9 @@ class DashboardPageState extends State<DashboardPage>
     final l10n = AppLocalizations.of(context)!;
     final currentUser = _firestoreService.currentUser;
     final communityService = CommunityService();
-
+    final notificationService = NotificationService();
+    
+    AppLogger.info('Opening tool borrow dialog');
     List<Tool> availableTools = [];
     List<CommunityMember> communityMembers = [];
     Tool? selectedTool;
@@ -309,7 +299,9 @@ class DashboardPageState extends State<DashboardPage>
     try {
       final allTools = await _firestoreService.getToolsStream().first;
       availableTools = allTools.where((tool) => !tool.isBorrowed).toList();
-      communityMembers = await communityService.getCommunityMembers().first;
+      final allMembers = await communityService.getCommunityMembers().first;
+      // Filter out current user from borrower list
+      communityMembers = allMembers.where((m) => m.id != currentUser?.uid).toList();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(pageContext).showSnackBar(
@@ -456,6 +448,10 @@ class DashboardPageState extends State<DashboardPage>
                               returnDate: returnDate,
                             );
                             await _firestoreService.updateTool(updatedTool);
+                            
+                            // Schedule return reminder notification
+                            await notificationService.scheduleReturnReminder(updatedTool);
+                            AppLogger.info('Tool borrowed: ${selectedTool!.name} by ${selectedBorrower!.name}');
 
                             if (!mounted) return;
 
@@ -486,29 +482,169 @@ class DashboardPageState extends State<DashboardPage>
   }
 
   void _showBorrowReturnDialog(Tool tool, {required bool isBorrowing}) {
-    // Simple placeholder implementation
     final l10n = AppLocalizations.of(context)!;
+    final notificationService = NotificationService();
+    final notesController = TextEditingController();
+    bool isProcessing = false;
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(isBorrowing ? 'Borrow Tool' : 'Return Tool'),
-          content: Text(
-              '${isBorrowing ? 'Borrow' : 'Return'} ${tool.name} functionality coming soon...'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('OK'),
-            ),
-          ],
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(l10n.returnTool),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Tool info summary
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tool.name,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (tool.brand != null && tool.brand!.isNotEmpty)
+                              Text(l10n.brand(tool.brand!)),
+                            Text(l10n.borrowedBy(tool.borrowedBy ?? 'N/A')),
+                            if (tool.returnDate != null)
+                              Text('${l10n.returnDate}: ${DateFormatter.format(tool.returnDate!)}'),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Return notes field
+                    TextField(
+                      controller: notesController,
+                      decoration: InputDecoration(
+                        labelText: l10n.returnNotes,
+                        hintText: l10n.addReturnNotes,
+                        border: const OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.markAsReturned,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isProcessing ? null : () => Navigator.of(dialogContext).pop(),
+                  child: Text(l10n.cancel),
+                ),
+                ElevatedButton(
+                  onPressed: isProcessing
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isProcessing = true;
+                          });
+
+                          try {
+                            // Create a borrow history entry for this return
+                            final now = DateTime.now();
+                            final historyEntry = BorrowHistory(
+                              id: DateTime.now().millisecondsSinceEpoch.toString(),
+                              borrowerId: tool.borrowedBy ?? 'unknown',
+                              borrowerName: tool.borrowedBy ?? 'Unknown',
+                              borrowerPhone: tool.borrowerPhone,
+                              borrowerEmail: tool.borrowerEmail,
+                              borrowDate: tool.returnDate?.subtract(const Duration(days: 7)) ?? now,
+                              dueDate: tool.returnDate ?? now,
+                              returnDate: now,
+                              notes: notesController.text.isNotEmpty ? notesController.text : null,
+                            );
+
+                            // Add the history entry to Firestore
+                            await _firestoreService.addBorrowHistory(tool.id, historyEntry);
+
+                            // Update the tool to mark as returned
+                            // Create new Tool directly to properly clear nullable fields
+                            final updatedTool = Tool(
+                              id: tool.id,
+                              name: tool.name,
+                              imagePath: tool.imagePath,
+                              brand: tool.brand,
+                              isBorrowed: false,
+                              returnDate: null,
+                              borrowedBy: null,
+                              borrowHistory: tool.borrowHistory,
+                              borrowerPhone: null,
+                              borrowerEmail: null,
+                              notes: null,
+                              qrCode: tool.qrCode,
+                              category: tool.category,
+                              isAvailableForCommunity: tool.isAvailableForCommunity,
+                              allowedBorrowers: tool.allowedBorrowers,
+                              communityRating: tool.communityRating,
+                              totalCommunityRatings: tool.totalCommunityRatings,
+                              ownerId: tool.ownerId,
+                              ownerName: tool.ownerName,
+                              requiresApproval: tool.requiresApproval,
+                              location: tool.location,
+                              condition: tool.condition,
+                              lastMaintenanceDate: tool.lastMaintenanceDate,
+                              maintenanceNotes: tool.maintenanceNotes,
+                            );
+                            
+                            await _firestoreService.updateTool(updatedTool);
+                            
+                            // Cancel any scheduled notifications for this tool
+                            await notificationService.cancelToolNotifications(tool);
+                            
+                            AppLogger.info('Tool returned: ${tool.name}');
+
+                            if (!mounted) return;
+
+                            Navigator.of(dialogContext).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('${tool.name} ${l10n.markAsReturned}'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } catch (e) {
+                            AppLogger.error('Error returning tool: ${tool.name}', e);
+                            setDialogState(() {
+                              isProcessing = false;
+                            });
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error returning tool: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                  child: isProcessing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.markAsReturned),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildSelectBorrowerDialog() {
-    // Implementation of _buildSelectBorrowerDialog method
-    return const SizedBox.shrink();
-  }
 }

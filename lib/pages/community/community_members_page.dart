@@ -3,7 +3,6 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_tool_shed/models/community_member.dart';
 import 'package:my_tool_shed/services/community_service.dart';
 import 'package:my_tool_shed/pages/community/member_profile_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_tool_shed/utils/logger.dart';
 
 class CommunityMembersPage extends StatefulWidget {
@@ -35,8 +34,6 @@ class _CommunityMembersPageState extends State<CommunityMembersPage> {
     final phoneController = TextEditingController();
     final addressController = TextEditingController();
     final bioController = TextEditingController();
-    final communityService = CommunityService();
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     showDialog(
       context: context,

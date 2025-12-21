@@ -93,9 +93,6 @@ class _LoginPageState extends State<LoginPage> {
             _errorMessage =
                 'Sign up failed. The email might be in use or password too weak.';
           });
-        } else if (userCredential != null) {
-          // Optionally, sign in the user automatically after sign up
-          // Or show a message to check email for verification if implemented
         }
       } catch (e) {
         if (mounted) {

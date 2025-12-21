@@ -68,6 +68,14 @@
         "description": "Label for cancel action"
     },
     "cancel": "Cancel",
+    "@ok": {
+        "description": "Label for OK action"
+    },
+    "ok": "OK",
+    "@comingSoon": {
+        "description": "Label for coming soon message"
+    },
+    "comingSoon": "Coming soon",
     "@markAsBorrowed": {
         "description": "Label for marking tool as borrowed"
     },

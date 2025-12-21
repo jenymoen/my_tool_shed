@@ -75,9 +75,7 @@ class ToolRecommendationsPage extends StatelessWidget {
         }
 
         if (!snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
+          return _buildShimmerLoading();
         }
 
         final tools = snapshot.data!;

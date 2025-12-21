@@ -152,10 +152,10 @@ void main() async {
       // Verify Firebase services
       _logger.info('Verifying Firebase services...');
       try {
-        final auth = FirebaseAuth.instance;
+        FirebaseAuth.instance;
         _logger.info('Firebase Auth initialized');
 
-        final firestore = FirebaseFirestore.instance;
+        FirebaseFirestore.instance;
         _logger.info('Firebase Firestore initialized');
 
         FirebaseStorage.instance;

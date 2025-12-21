@@ -4,7 +4,6 @@ import 'package:my_tool_shed/models/tool_rating.dart';
 import 'package:my_tool_shed/models/community_member.dart';
 import 'package:my_tool_shed/services/community_service.dart';
 import 'package:my_tool_shed/widgets/community/borrow_request_dialog.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:my_tool_shed/utils/logger.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:image_picker/image_picker.dart';
 // import 'package:intl/intl.dart';
 import 'package:my_tool_shed/models/tool.dart';
@@ -9,12 +8,6 @@ import 'package:my_tool_shed/services/firestore_service.dart';
 // import 'package:my_tool_shed/services/notification_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import 'package:my_tool_shed/pages/dashboard_page.dart'; // For drawer navigation
-import 'package:my_tool_shed/services/auth_service.dart'; // Added for logout
-import 'package:my_tool_shed/pages/login_page.dart'; // Added for navigation after logout
-import 'package:my_tool_shed/pages/profile_page.dart'; // Added for ProfilePage navigation
-import 'package:my_tool_shed/pages/settings_page.dart'; // Added for SettingsPage navigation
-import 'package:my_tool_shed/pages/community/community_page.dart'; // Added for CommunityPage
 import 'package:my_tool_shed/pages/community/tool_details_page.dart'; // Added for ToolDetailsPage
 // import 'package:my_tool_shed/widgets/language_selector.dart'; // Added for LanguageSelector
 import 'package:flutter_gen/gen_l10n/app_localizations.dart'; // Added for AppLocalizations
